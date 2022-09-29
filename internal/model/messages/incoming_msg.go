@@ -21,9 +21,7 @@ type Message struct {
 
 func (s *Model) IncomingMessage(msg Message) error {
 	if msg.Text == "/start" {
-		s.tgClient.SendMessage("hello", msg.UserID)
-		return nil
+		return s.tgClient.SendMessage("hello", msg.UserID)
 	}
-	s.tgClient.SendMessage("dont know this command", msg.UserID)
-	return nil
+	return s.tgClient.SendMessage("dont know this command", msg.UserID)
 }

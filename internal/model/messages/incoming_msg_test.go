@@ -2,6 +2,7 @@ package messages
 
 import (
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -21,4 +22,49 @@ func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
+}
+
+func Test_ParseLine_ShouldFillConsumptionFields(t *testing.T) {
+	line := "123.4 еда 2020-02-02"
+
+	cons, err := parseLine(line)
+
+	date, _ := time.Parse("2006-01-02", "2020-02-02")
+	assert.NoError(t, err)
+	assert.Equal(t, &Consumption{
+		Amount:   123.4,
+		Category: "еда",
+		Date:     date,
+	}, cons)
+}
+
+func Test_ParseLine_ShouldFillConsumptionFields_NoDataNoPointBadCategory(t *testing.T) {
+	line := "1234 еДSdа"
+
+	cons, err := parseLine(line)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &Consumption{
+		Amount:   1234,
+		Category: "еДSdа",
+		Date:     time.Now().Round(time.Hour),
+	}, cons)
+}
+
+func Test_ParseLine_ShouldFillConsumptionFields_WrongLine(t *testing.T) {
+	line := "1.2s34 еДS3dа "
+
+	cons, err := parseLine(line)
+
+	assert.Error(t, err)
+	assert.Nil(t, cons)
+}
+
+func Test_ParseLine_ShouldFillConsumptionFields_WrongDate(t *testing.T) {
+	line := "123.4 еда 2020-92-92"
+
+	cons, err := parseLine(line)
+
+	assert.Error(t, err)
+	assert.Nil(t, cons)
 }

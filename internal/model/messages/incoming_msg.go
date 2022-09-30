@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -46,7 +47,7 @@ var errIncorrectLine = errors.New("Incorrect line")
 
 func parseLine(text string) (*Consumption, error) {
 	matches := lineRe.FindStringSubmatch(text)
-	if len(matches) < 3 {
+	if len(matches) < 4 {
 		return nil, errIncorrectLine
 	}
 
@@ -59,8 +60,10 @@ func parseLine(text string) (*Consumption, error) {
 
 	var date time.Time
 
-	if len(matches) < 4 {
-		date = time.Now()
+	fmt.Println(len(matches))
+
+	if len(matches[3]) == 0 {
+		date = time.Now().Round(time.Hour)
 	} else {
 		date, err = time.Parse("2006-01-02", matches[3])
 		if err != nil {
@@ -77,26 +80,17 @@ func parseLine(text string) (*Consumption, error) {
 
 func (s *Model) IncomingMessage(msg Message) error {
 	if msg.Text == "/start" {
-		// 		resp := `Бот для учета расходов
+		resp := `Бот для учета расходов
 
-		// Добавить трату: <сумма> <категория> <дата*>
-		// * - необязательный параметр
-		// Пример: 499 интернет 2022-01-01
+Добавить трату: <сумма> <категория> <дата*>
+* - необязательный параметр
+Пример: 499.99 интернет 2022-01-01
 
-		// Команды:
-		// /start - запуск бота и инструкция
-		// /week - недельный отчет
-		// /month - месячный отчет
-		// /year - годовой отчет`
-		resp := "Бот для учета расходов\n\n" +
-			"Добавить трату: <сумма> <категория> <дата*>\n" +
-			"* - необязательный параметр\n" +
-			"Пример: 499 интернет 2022-01-01\n\n" +
-			"Команды:\n" +
-			"/start - запуск бота и инструкция\n" +
-			"/week - недельный отчет\n" +
-			"/month - месячный отчет\n" +
-			"/year - годовой отчет"
+Команды:
+/start - запуск бота и инструкция
+/week - недельный отчет
+/month - месячный отчет
+/year - годовой отчет`
 
 		return s.tgClient.SendMessage(resp, msg.UserID)
 	}

@@ -14,7 +14,7 @@ func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 	sender := mocks.NewMockMessageSender(ctrl)
 	model := New(sender, nil)
 
-	sender.EXPECT().SendMessage("Неизвестная команда", int64(123))
+	sender.EXPECT().SendMessage("Неизвестная команда:(", int64(123))
 
 	err := model.IncomingMessage(Message{
 		Text:   "some text",

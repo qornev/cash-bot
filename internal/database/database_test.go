@@ -41,8 +41,10 @@ func Test_Get_ShouldReturnSameObjects(t *testing.T) {
 		Date:     time.Now().Unix(),
 	}
 
-	db.Add(1234, cons)
-	db.Add(1234, cons)
+	err := db.Add(1234, cons)
+	assert.NoError(t, err)
+	err = db.Add(1234, cons)
+	assert.NoError(t, err)
 
 	res, err := db.Get(1234)
 	assert.NoError(t, err)

@@ -124,6 +124,9 @@ func (s *Model) IncomingMessage(msg Message) error {
 			return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
 		}
 
+		if len(report) == 0 {
+			return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
+		}
 		return s.tgClient.SendMessage("Отчет за неделю:\n"+report, msg.UserID)
 	}
 
@@ -138,6 +141,9 @@ func (s *Model) IncomingMessage(msg Message) error {
 			return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
 		}
 
+		if len(report) == 0 {
+			return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
+		}
 		return s.tgClient.SendMessage("Отчет за месяц:\n"+report, msg.UserID)
 	}
 
@@ -152,6 +158,9 @@ func (s *Model) IncomingMessage(msg Message) error {
 			return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
 		}
 
+		if len(report) == 0 {
+			return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
+		}
 		return s.tgClient.SendMessage("Отчет за год:\n"+report, msg.UserID)
 	}
 

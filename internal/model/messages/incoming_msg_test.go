@@ -34,7 +34,7 @@ func Test_ParseLine_ShouldFillConsumptionFields(t *testing.T) {
 	assert.Equal(t, &Consumption{
 		Amount:   123.4,
 		Category: "еда",
-		Date:     date,
+		Date:     date.Unix(),
 	}, cons)
 }
 
@@ -44,11 +44,9 @@ func Test_ParseLine_ShouldFillConsumptionFields_NoDataNoPointBadCategory(t *test
 	cons, err := parseLine(line)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &Consumption{
-		Amount:   1234,
-		Category: "еДSdа",
-		Date:     time.Now().Round(time.Hour),
-	}, cons)
+	assert.Equal(t, float64(1234), cons.Amount)
+	assert.Equal(t, "еДSdа", cons.Category)
+	assert.Equal(t, time.Now().Round(time.Hour), time.Unix(cons.Date, 0).Round(time.Hour))
 }
 
 func Test_ParseLine_ShouldFillConsumptionFields_WrongLine(t *testing.T) {

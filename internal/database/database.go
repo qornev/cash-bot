@@ -19,6 +19,6 @@ func (db *Database) Add(userID int64, consumtion *messages.Consumption) error {
 	return nil
 }
 
-func (db *Database) Remove(userID int64, consumtion *messages.Consumption) error {
-	return nil
+func (db *Database) Get(userID int64) ([]*messages.Consumption, error) {
+	return db.data[userID], nil
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -118,12 +119,12 @@ func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 		}
 	}
 
-	resp := ""
+	var resp strings.Builder
 	for key, value := range sum {
-		resp += fmt.Sprintf("%s - %.2f\n", key, value)
+		fmt.Fprintf(&resp, "%s - %.2f\n", key, value)
 	}
 
-	return resp, nil
+	return resp.String(), nil
 }
 
 var lineRe = regexp.MustCompile("^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$")

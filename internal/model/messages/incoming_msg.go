@@ -42,6 +42,90 @@ type Consumption struct {
 	Date     int64
 }
 
+const greeting = `Бот для учета расходов
+
+Добавить трату: <сумма> <категория> <дата*>
+* - необязательный параметр
+Пример: 499.99 интернет 2022-01-01
+
+Команды:
+/start - запуск бота и инструкция
+/week - недельный отчет
+/month - месячный отчет
+/year - годовой отчет`
+
+func (s *Model) IncomingMessage(msg Message) error {
+	switch msg.Text {
+	case "/start":
+		return s.tgClient.SendMessage(greeting, msg.UserID)
+	case "/week", "/month", "/year":
+		return s.sendReport(msg)
+	default:
+		// If no match with any command - start parse line
+		parsed, err := parseLine(msg.Text)
+		if err != nil {
+			log.Println(msg.UserID, "consumption did not parse")
+		}
+
+		if parsed != nil {
+			err := s.db.Add(msg.UserID, parsed)
+			if err != nil {
+				return errors.Wrap(err, "consumption did not add to db")
+			} else {
+				return s.tgClient.SendMessage("Расход записан:)", msg.UserID)
+			}
+		}
+
+		return s.tgClient.SendMessage("Неизвестная команда:(", msg.UserID)
+	}
+}
+
+func (s *Model) sendReport(msg Message) error {
+	currentTime := time.Now()
+	var startTime time.Time
+	switch msg.Text {
+	case "/week":
+		startTime = currentTime.AddDate(0, 0, -int(currentTime.Weekday()))
+	case "/month":
+		startTime = currentTime.AddDate(0, 0, 1-currentTime.Day())
+	case "/year":
+		startTime = currentTime.AddDate(0, 1-int(currentTime.Month()), 1-currentTime.Day())
+	}
+	startTime = time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())
+
+	report, err := s.getReport(startTime, msg)
+	if err != nil {
+		log.Println(msg.UserID, "can't get report")
+		return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
+	}
+
+	if len(report) == 0 {
+		return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
+	}
+	return s.tgClient.SendMessage("Отчет:\n"+report, msg.UserID)
+}
+
+func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
+	list, err := s.db.Get(msg.UserID)
+	if err != nil {
+		return "", errors.Wrap(err, "can't get consumption")
+	}
+
+	sum := make(map[string]float64)
+	for _, elem := range list {
+		if elem.Date > startTime.Unix() {
+			sum[elem.Category] += elem.Amount
+		}
+	}
+
+	resp := ""
+	for key, value := range sum {
+		resp += fmt.Sprintf("%s - %.2f\n", key, value)
+	}
+
+	return resp, nil
+}
+
 var lineRe = regexp.MustCompile("^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$")
 
 var errIncorrectLine = errors.New("Incorrect line")
@@ -74,110 +158,4 @@ func parseLine(text string) (*Consumption, error) {
 		Category: category,
 		Date:     date.Unix(),
 	}, nil
-}
-
-func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
-	list, err := s.db.Get(msg.UserID)
-	if err != nil {
-		return "", errors.Wrap(err, "can't get consumption")
-	}
-
-	sum := make(map[string]float64)
-	for _, elem := range list {
-		if elem.Date > startTime.Unix() {
-			sum[elem.Category] += elem.Amount
-		}
-	}
-
-	resp := ""
-	for key, value := range sum {
-		resp += fmt.Sprintf("%s: %.2f\n", key, value)
-	}
-	return resp, nil
-}
-
-func (s *Model) IncomingMessage(msg Message) error {
-	if msg.Text == "/start" {
-		resp := `Бот для учета расходов
-
-Добавить трату: <сумма> <категория> <дата*>
-* - необязательный параметр
-Пример: 499.99 интернет 2022-01-01
-
-Команды:
-/start - запуск бота и инструкция
-/week - недельный отчет
-/month - месячный отчет
-/year - годовой отчет`
-
-		return s.tgClient.SendMessage(resp, msg.UserID)
-	}
-
-	if msg.Text == "/week" {
-		currentTime := time.Now()
-		weekStart := currentTime.AddDate(0, 0, -int(currentTime.Weekday()))
-		weekStart = time.Date(weekStart.Year(), weekStart.Month(), weekStart.Day(), 0, 0, 0, 0, weekStart.Location())
-
-		report, err := s.getReport(weekStart, msg)
-		if err != nil {
-			log.Println(msg.UserID, "can't get week report")
-			return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
-		}
-
-		if len(report) == 0 {
-			return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
-		}
-		return s.tgClient.SendMessage("Отчет за неделю:\n"+report, msg.UserID)
-	}
-
-	if msg.Text == "/month" {
-		currentTime := time.Now()
-		monthStart := currentTime.AddDate(0, 0, 1-currentTime.Day())
-		monthStart = time.Date(monthStart.Year(), monthStart.Month(), monthStart.Day(), 0, 0, 0, 0, monthStart.Location())
-
-		report, err := s.getReport(monthStart, msg)
-		if err != nil {
-			log.Println(msg.UserID, "can't get month report")
-			return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
-		}
-
-		if len(report) == 0 {
-			return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
-		}
-		return s.tgClient.SendMessage("Отчет за месяц:\n"+report, msg.UserID)
-	}
-
-	if msg.Text == "/year" {
-		currentTime := time.Now()
-		yearStart := currentTime.AddDate(0, 1-int(currentTime.Month()), 1-currentTime.Day())
-		yearStart = time.Date(yearStart.Year(), yearStart.Month(), yearStart.Day(), 0, 0, 0, 0, yearStart.Location())
-
-		report, err := s.getReport(yearStart, msg)
-		if err != nil {
-			log.Println(msg.UserID, "can't get year report")
-			return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
-		}
-
-		if len(report) == 0 {
-			return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
-		}
-		return s.tgClient.SendMessage("Отчет за год:\n"+report, msg.UserID)
-	}
-
-	// If no match with any command - start parse line
-	parsed, err := parseLine(msg.Text)
-	if err != nil {
-		log.Println(msg.UserID, "consumption did not parse")
-	}
-
-	if parsed != nil {
-		err := s.db.Add(msg.UserID, parsed)
-		if err != nil {
-			log.Println(msg.UserID, "consumption did not add to db")
-		} else {
-			return s.tgClient.SendMessage("Расход записан:)", msg.UserID)
-		}
-	}
-
-	return s.tgClient.SendMessage("Неизвестная команда:(", msg.UserID)
 }

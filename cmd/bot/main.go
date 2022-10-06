@@ -5,8 +5,8 @@ import (
 
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/tg"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/config"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/database"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/storage"
 )
 
 func main() {
@@ -20,12 +20,12 @@ func main() {
 		log.Fatal("tg client init failed")
 	}
 
-	db, err := database.New()
+	storage, err := storage.New()
 	if err != nil {
-		log.Fatal("db init failed")
+		log.Fatal("storage init failed")
 	}
 
-	msgModel := messages.New(tgClient, db)
+	msgModel := messages.New(tgClient, storage)
 
 	tgClient.ListenUpdates(msgModel)
 }

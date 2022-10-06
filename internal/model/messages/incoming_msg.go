@@ -20,21 +20,36 @@ type DataManipulator interface {
 	Get(userID int64) ([]*Consumption, error)
 }
 
-type Model struct {
-	tgClient MessageSender
-	db       DataManipulator
+type StateManipulator interface {
+	SetState(userID int64, currency string) error
+	GetState(userID int64) (string, error)
 }
 
-func New(tgClient MessageSender, db DataManipulator) *Model {
+type StorageManipulator interface {
+	DataManipulator
+	StateManipulator
+}
+
+type Model struct {
+	tgClient MessageSender
+	storage  StorageManipulator
+}
+
+func New(tgClient MessageSender, storage StorageManipulator) *Model {
 	return &Model{
 		tgClient: tgClient,
-		db:       db,
+		storage:  storage,
 	}
 }
 
 type Message struct {
 	Text   string
 	UserID int64
+}
+
+type CurrencyState struct {
+	Currency string
+	UserID   int64
 }
 
 type Consumption struct {
@@ -53,7 +68,8 @@ const greeting = `Бот для учета расходов
 /start - запуск бота и инструкция
 /week - недельный отчет
 /month - месячный отчет
-/year - годовой отчет`
+/year - годовой отчет
+/currency - изменить валюту`
 
 func (s *Model) IncomingMessage(msg Message) error {
 	switch msg.Text {
@@ -69,7 +85,7 @@ func (s *Model) IncomingMessage(msg Message) error {
 		}
 
 		if parsed != nil {
-			err := s.db.Add(msg.UserID, parsed)
+			err := s.storage.Add(msg.UserID, parsed)
 			if err != nil {
 				return errors.Wrap(err, "consumption did not add to db")
 			} else {
@@ -107,7 +123,7 @@ func (s *Model) sendReport(msg Message) error {
 }
 
 func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
-	list, err := s.db.Get(msg.UserID)
+	list, err := s.storage.Get(msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get consumption")
 	}

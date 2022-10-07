@@ -52,3 +52,24 @@ func Test_Get_ShouldReturnSameConsumption(t *testing.T) {
 	assert.Equal(t, res[0], cons)
 	assert.Equal(t, res[1], cons)
 }
+
+func Test_SetState_ShouldSaveUserState(t *testing.T) {
+	storage, _ := New()
+
+	err := storage.SetState(1234, "USD")
+	assert.NoError(t, err)
+
+	res, err := storage.GetState(1234)
+	assert.NoError(t, err)
+
+	assert.Equal(t, res, "USD")
+}
+
+func Test_GetState_ShouldReturnDefaultValueIfKeyNotExist(t *testing.T) {
+	storage, _ := New()
+
+	res, err := storage.GetState(1234)
+	assert.NoError(t, err)
+
+	assert.Equal(t, res, "RUB")
+}

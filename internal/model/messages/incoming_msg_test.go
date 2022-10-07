@@ -26,6 +26,21 @@ func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func Test_OnCurrencyCommand_ShouldAnswerWithKeyboardMessage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sender := mocks.NewMockMessageSender(ctrl)
+	model := New(sender, nil)
+
+	sender.EXPECT().SendMessageWithKeyboard("Выберите валюту", "currency", int64(1234))
+
+	err := model.IncomingMessage(Message{
+		Text:   "/currency",
+		UserID: int64(1234),
+	})
+
+	assert.NoError(t, err)
+}
+
 func Test_ParseLine_ShouldFillConsumptionFields(t *testing.T) {
 	line := "123.4 еда 2020-02-02"
 

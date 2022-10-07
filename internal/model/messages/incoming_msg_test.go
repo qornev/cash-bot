@@ -6,7 +6,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/messages"
+
+	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/model"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/base"
 )
 
 func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
@@ -31,7 +33,7 @@ func Test_ParseLine_ShouldFillConsumptionFields(t *testing.T) {
 
 	date, _ := time.Parse("2006-01-02", "2020-02-02")
 	assert.NoError(t, err)
-	assert.Equal(t, &Consumption{
+	assert.Equal(t, &base.Expense{
 		Amount:   123.4,
 		Category: "еда",
 		Date:     date.Unix(),

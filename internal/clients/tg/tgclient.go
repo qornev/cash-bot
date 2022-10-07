@@ -5,6 +5,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
 )
 
@@ -35,7 +36,36 @@ func (c *Client) SendMessage(text string, userID int64) error {
 	return nil
 }
 
-func (c *Client) ListenUpdates(msgModel *messages.Model) {
+var currencyKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("RUB", "RUB"),
+		tgbotapi.NewInlineKeyboardButtonData("USD", "USD"),
+	),
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("EUR", "EUR"),
+		tgbotapi.NewInlineKeyboardButtonData("CNY", "CNY"),
+	),
+)
+
+var MarkupNotExistError = errors.New("keyboard markup not exist")
+
+func (c *Client) SendMessageWithKeyboard(text string, keyboardMarkup string, userID int64) error {
+	msg := tgbotapi.NewMessage(userID, text)
+	switch keyboardMarkup {
+	case "currency":
+		msg.ReplyMarkup = currencyKeyboard
+	default:
+		return MarkupNotExistError
+	}
+
+	_, err := c.client.Send(msg)
+	if err != nil {
+		return errors.Wrap(err, "client.Send")
+	}
+	return nil
+}
+
+func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Model) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
@@ -53,6 +83,17 @@ func (c *Client) ListenUpdates(msgModel *messages.Model) {
 			})
 			if err != nil {
 				log.Println("error processing message:", err)
+			}
+		} else if update.CallbackQuery != nil { // If we got a callback
+			log.Printf("[%s] send callback data %s", update.CallbackQuery.From.UserName, update.CallbackQuery.Data)
+
+			err := clbModel.IncomingCallback(callbacks.Callback{
+				Data:   update.CallbackQuery.Data,
+				UserID: update.CallbackQuery.From.ID,
+				// InlineID: update.CallbackQuery.Message.MessageID,
+			})
+			if err != nil {
+				log.Println("error processing callback:", err)
 			}
 		}
 	}

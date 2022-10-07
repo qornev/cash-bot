@@ -9,33 +9,15 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/base"
 )
 
-type MessageSender interface {
-	SendMessage(text string, userID int64) error
-}
-
-type DataManipulator interface {
-	Add(userID int64, consumption *Consumption) error
-	Get(userID int64) ([]*Consumption, error)
-}
-
-type StateManipulator interface {
-	SetState(userID int64, currency string) error
-	GetState(userID int64) (string, error)
-}
-
-type StorageManipulator interface {
-	DataManipulator
-	StateManipulator
-}
-
 type Model struct {
-	tgClient MessageSender
-	storage  StorageManipulator
+	tgClient base.MessageSender
+	storage  base.StorageManipulator
 }
 
-func New(tgClient MessageSender, storage StorageManipulator) *Model {
+func New(tgClient base.MessageSender, storage base.StorageManipulator) *Model {
 	return &Model{
 		tgClient: tgClient,
 		storage:  storage,
@@ -45,17 +27,6 @@ func New(tgClient MessageSender, storage StorageManipulator) *Model {
 type Message struct {
 	Text   string
 	UserID int64
-}
-
-type CurrencyState struct {
-	Currency string
-	UserID   int64
-}
-
-type Consumption struct {
-	Amount   float64
-	Category string
-	Date     int64
 }
 
 const greeting = `Бот для учета расходов
@@ -77,6 +48,8 @@ func (s *Model) IncomingMessage(msg Message) error {
 		return s.tgClient.SendMessage(greeting, msg.UserID)
 	case "/week", "/month", "/year":
 		return s.sendReport(msg)
+	case "/currency":
+		return s.tgClient.SendMessageWithKeyboard("Выберите валюту", "currency", msg.UserID)
 	default:
 		// If no match with any command - start parse line
 		parsed, err := parseLine(msg.Text)
@@ -147,7 +120,7 @@ var lineRe = regexp.MustCompile("^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-
 
 var errIncorrectLine = errors.New("Incorrect line")
 
-func parseLine(text string) (*Consumption, error) {
+func parseLine(text string) (*base.Expense, error) {
 	matches := lineRe.FindStringSubmatch(text)
 	if len(matches) < 4 {
 		return nil, errIncorrectLine
@@ -170,7 +143,7 @@ func parseLine(text string) (*Consumption, error) {
 		}
 	}
 
-	return &Consumption{
+	return &base.Expense{
 		Amount:   amount,
 		Category: category,
 		Date:     date.Unix(),

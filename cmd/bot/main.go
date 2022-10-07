@@ -5,6 +5,7 @@ import (
 
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/tg"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/config"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/storage"
 )
@@ -26,6 +27,7 @@ func main() {
 	}
 
 	msgModel := messages.New(tgClient, storage)
+	clbModel := callbacks.New(tgClient, storage)
 
-	tgClient.ListenUpdates(msgModel)
+	tgClient.ListenUpdates(msgModel, clbModel)
 }

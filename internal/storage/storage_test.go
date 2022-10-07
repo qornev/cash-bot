@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/base"
 )
 
 func Test_New_ShouldCreateStorageObject(t *testing.T) {
@@ -16,7 +16,7 @@ func Test_New_ShouldCreateStorageObject(t *testing.T) {
 func Test_Add_ShouldAddConsumptionToStorage(t *testing.T) {
 	storage, _ := New()
 
-	cons := &messages.Consumption{
+	cons := &base.Expense{
 		Amount:   123.45,
 		Category: "еда",
 		Date:     time.Now().Unix(),
@@ -35,7 +35,7 @@ func Test_Add_ShouldAddConsumptionToStorage(t *testing.T) {
 func Test_Get_ShouldReturnSameConsumption(t *testing.T) {
 	storage, _ := New()
 
-	cons := &messages.Consumption{
+	cons := &base.Expense{
 		Amount:   123.45,
 		Category: "еда",
 		Date:     time.Now().Unix(),

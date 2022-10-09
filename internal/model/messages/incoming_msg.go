@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 )
 
 type MessageSender interface {

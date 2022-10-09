@@ -3,9 +3,10 @@ package main
 import (
 	"log"
 
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/rate"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/tg"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/config"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/storage"
@@ -27,7 +28,9 @@ func main() {
 		log.Fatal("storage init failed")
 	}
 
-	converter := converter.New(config)
+	rateClient := rate.New(config)
+	converter := converter.New(rateClient)
+	converter.AutoUpdateRate()
 
 	msgModel := messages.New(tgClient, storage, converter)
 	clbModel := callbacks.New(tgClient, storage)

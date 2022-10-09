@@ -1,4 +1,4 @@
-package converter
+package rate
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 )
 
 type HeaderGetter interface {
@@ -13,47 +14,32 @@ type HeaderGetter interface {
 	Host() string
 }
 
-type Rate struct {
-	USD float64
-	EUR float64
-	CNY float64
-}
-
-type Params struct {
+type Service struct {
 	Key  string
 	Host string
 }
 
-type Service struct {
-	rate   *Rate
-	params Params
-}
-
 func New(headerGetter HeaderGetter) *Service {
 	return &Service{
-		rate: nil,
-		params: Params{
-			Key:  headerGetter.Key(),
-			Host: headerGetter.Host(),
-		},
+		Key:  headerGetter.Key(),
+		Host: headerGetter.Host(),
 	}
 }
 
-func (s *Service) UpdateRate() error {
+func (s *Service) GetUpdate() (*converter.Rate, error) {
 	rawJSON, err := s.getRequestRate()
 	if err != nil {
-		return errors.Wrap(err, "can't complete get request")
+		return nil, errors.Wrap(err, "can't complete get request")
 	}
 
 	responseRate, err := parseRates(rawJSON)
 	if err != nil {
-		return errors.Wrap(err, "can't complete parse response")
+		return nil, errors.Wrap(err, "can't complete parse response")
 	}
 
 	rate := changeEURBaseToRUB(responseRate)
-	s.setRate(rate)
 
-	return nil
+	return rate, nil
 }
 
 const url = "https://currency-conversion-and-exchange-rates.p.rapidapi.com/latest"
@@ -64,8 +50,8 @@ func (s *Service) getRequestRate() ([]byte, error) {
 		return nil, errors.Wrap(err, "get request exit with error")
 	}
 
-	req.Header.Add("X-RapidAPI-Key", s.params.Key)
-	req.Header.Add("X-RapidAPI-Host", s.params.Host)
+	req.Header.Add("X-RapidAPI-Key", s.Key)
+	req.Header.Add("X-RapidAPI-Host", s.Host)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -81,43 +67,8 @@ func (s *Service) getRequestRate() ([]byte, error) {
 	return body, nil
 }
 
-func (s *Service) setRate(rate Rate) {
-	s.rate = &rate
-}
-
-var CurrencyNotExistError = errors.New("currency not exist")
-
-func (s *Service) getRate(currency string) (float64, error) {
-	switch currency {
-	case "RUB":
-		return 1.0, nil
-	case "USD":
-		return s.rate.USD, nil
-	case "EUR":
-		return s.rate.EUR, nil
-	case "CNY":
-		return s.rate.CNY, nil
-	default:
-		return 0.0, CurrencyNotExistError
-	}
-}
-
-func (s *Service) Exchange(value float64, from string, to string) (float64, error) {
-	fromRate, err := s.getRate(from)
-	if err != nil {
-		return fromRate, errors.Wrap(err, "can't get from value in exchage")
-	}
-
-	toRate, err := s.getRate(to)
-	if err != nil {
-		return toRate, errors.Wrap(err, "can't get to value in exchange")
-	}
-
-	return value * (fromRate / toRate), nil
-}
-
 type ResponseRate struct {
-	EUR   string `json:"base"`
+	Base  string `json:"base"` // EUR base
 	Rates struct {
 		USD float64 `json:"USD"`
 		RUB float64 `json:"RUB"`
@@ -134,8 +85,8 @@ func parseRates(rawJSON []byte) (*ResponseRate, error) {
 	return &responseRate, nil
 }
 
-func changeEURBaseToRUB(responseRate *ResponseRate) Rate {
-	return Rate{
+func changeEURBaseToRUB(responseRate *ResponseRate) *converter.Rate {
+	return &converter.Rate{
 		EUR: responseRate.Rates.RUB,
 		USD: (1.0 / responseRate.Rates.USD) * responseRate.Rates.RUB,
 		CNY: (1.0 / responseRate.Rates.CNY) * responseRate.Rates.RUB,

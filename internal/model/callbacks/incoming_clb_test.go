@@ -5,7 +5,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/model/callbacks"
 )
 

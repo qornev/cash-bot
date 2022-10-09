@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/base"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
 )
 
 func Test_New_ShouldCreateStorageObject(t *testing.T) {
@@ -16,7 +17,7 @@ func Test_New_ShouldCreateStorageObject(t *testing.T) {
 func Test_Add_ShouldAddConsumptionToStorage(t *testing.T) {
 	storage, _ := New()
 
-	cons := &base.Expense{
+	cons := &messages.Expense{
 		Amount:   123.45,
 		Category: "еда",
 		Date:     time.Now().Unix(),
@@ -35,7 +36,7 @@ func Test_Add_ShouldAddConsumptionToStorage(t *testing.T) {
 func Test_Get_ShouldReturnSameConsumption(t *testing.T) {
 	storage, _ := New()
 
-	cons := &base.Expense{
+	cons := &messages.Expense{
 		Amount:   123.45,
 		Category: "еда",
 		Date:     time.Now().Unix(),
@@ -56,13 +57,13 @@ func Test_Get_ShouldReturnSameConsumption(t *testing.T) {
 func Test_SetState_ShouldSaveUserState(t *testing.T) {
 	storage, _ := New()
 
-	err := storage.SetState(1234, "USD")
+	err := storage.SetState(1234, converter.USD)
 	assert.NoError(t, err)
 
 	res, err := storage.GetState(1234)
 	assert.NoError(t, err)
 
-	assert.Equal(t, res, "USD")
+	assert.Equal(t, res, converter.USD)
 }
 
 func Test_GetState_ShouldReturnDefaultValueIfKeyNotExist(t *testing.T) {
@@ -71,5 +72,5 @@ func Test_GetState_ShouldReturnDefaultValueIfKeyNotExist(t *testing.T) {
 	res, err := storage.GetState(1234)
 	assert.NoError(t, err)
 
-	assert.Equal(t, res, "RUB")
+	assert.Equal(t, res, converter.RUB)
 }

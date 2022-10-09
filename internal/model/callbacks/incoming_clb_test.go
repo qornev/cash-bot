@@ -1,27 +1,27 @@
-package callbacks_test
+package callbacks
 
 import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/model"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/converter"
+	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/model/callbacks"
 )
 
 func Test_IncomingCallback_ShouldChangeCurrency(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sender := mocks.NewMockMessageSender(ctrl)
 	stater := mocks.NewMockStateManipulator(ctrl)
-	model := callbacks.New(sender, stater)
+	model := New(sender, stater)
 
 	var userID int64 = 1234
 
 	sender.EXPECT().SendMessage("Валюта изменена на USD", userID)
-	stater.EXPECT().SetState(userID, "USD")
+	stater.EXPECT().SetState(userID, converter.USD)
 
-	err := model.IncomingCallback(callbacks.Callback{
-		Data:   "USD",
+	err := model.IncomingCallback(Callback{
+		Data:   converter.USD,
 		UserID: userID,
 	})
 

@@ -10,7 +10,13 @@ import (
 const configFile = "data/config.yaml"
 
 type Config struct {
-	Token string `yaml:"token"`
+	Telegram struct {
+		Token string `yaml:"token"`
+	} `yaml:"telegram"`
+	RateApi struct {
+		Key  string `yaml:"key"`
+		Host string `yaml:"host"`
+	} `yaml:"rateApi"`
 }
 
 type Service struct {
@@ -18,9 +24,13 @@ type Service struct {
 }
 
 func New() (*Service, error) {
+	return NewFromFile(configFile)
+}
+
+func NewFromFile(filePath string) (*Service, error) {
 	s := &Service{}
 
-	rawYAML, err := os.ReadFile(configFile)
+	rawYAML, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading config file")
 	}
@@ -34,5 +44,13 @@ func New() (*Service, error) {
 }
 
 func (s *Service) Token() string {
-	return s.config.Token
+	return s.config.Telegram.Token
+}
+
+func (s *Service) Key() string {
+	return s.config.RateApi.Key
+}
+
+func (s *Service) Host() string {
+	return s.config.RateApi.Host
 }

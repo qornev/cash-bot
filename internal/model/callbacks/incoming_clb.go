@@ -4,15 +4,22 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/base"
 )
 
-type Model struct {
-	tgClient base.MessageSender
-	storage  base.StateManipulator
+type MessageSender interface {
+	SendMessage(text string, userID int64) error
 }
 
-func New(tgClient base.MessageSender, storage base.StateManipulator) *Model {
+type StateManipulator interface {
+	SetState(userID int64, currency string) error
+}
+
+type Model struct {
+	tgClient MessageSender
+	storage  StateManipulator
+}
+
+func New(tgClient MessageSender, storage StateManipulator) *Model {
 	return &Model{
 		tgClient: tgClient,
 		storage:  storage,

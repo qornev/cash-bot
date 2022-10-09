@@ -6,15 +6,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-
-	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/model"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/base"
+	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/model/messages"
 )
 
 func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sender := mocks.NewMockMessageSender(ctrl)
-	model := New(sender, nil)
+	model := New(sender, nil, nil)
 
 	sender.EXPECT().SendMessage("Неизвестная команда:(", int64(123))
 
@@ -29,7 +27,7 @@ func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 func Test_OnCurrencyCommand_ShouldAnswerWithKeyboardMessage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sender := mocks.NewMockMessageSender(ctrl)
-	model := New(sender, nil)
+	model := New(sender, nil, nil)
 
 	sender.EXPECT().SendMessageWithKeyboard("Выберите валюту", "currency", int64(1234))
 
@@ -48,7 +46,7 @@ func Test_ParseLine_ShouldFillConsumptionFields(t *testing.T) {
 
 	date, _ := time.Parse("2006-01-02", "2020-02-02")
 	assert.NoError(t, err)
-	assert.Equal(t, &base.Expense{
+	assert.Equal(t, &Expense{
 		Amount:   123.4,
 		Category: "еда",
 		Date:     date.Unix(),

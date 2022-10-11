@@ -3,6 +3,7 @@ package converter
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -30,15 +31,18 @@ func New(rateClient RateUpdater) *Model {
 	}
 }
 
-func (m *Model) AutoUpdateRate() {
+func (m *Model) AutoUpdateRate(wg *sync.WaitGroup) {
 	ticker := time.NewTicker(time.Hour)
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		for {
 			<-ticker.C
-
 			if err := m.UpdateRate(); err != nil {
 				log.Println("error processing rate update:", err)
+				break
 			}
 		}
 	}()
@@ -48,26 +52,11 @@ func (m *Model) UpdateRate() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	rate := make(chan *Rate, 1)  // Add buffer with size 1 to prevent
-	chErr := make(chan error, 1) // infinity goroutine in line 51
-
-	go func() {
-		value, err := m.rateClient.GetUpdate(ctx)
-		if err != nil {
-			chErr <- err
-			return
-		}
-		rate <- value
-	}()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case value := <-rate:
-		m.setRate(value)
-	case errValue := <-chErr:
-		return errValue
+	rate, err := m.rateClient.GetUpdate(ctx)
+	if err != nil {
+		return errors.Wrap(err, "can't get update for rates")
 	}
+	m.setRate(rate)
 
 	return nil
 }

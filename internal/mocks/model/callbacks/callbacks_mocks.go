@@ -5,6 +5,7 @@
 package mock_callbacks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -71,15 +72,15 @@ func (m *MockStateManipulator) EXPECT() *MockStateManipulatorMockRecorder {
 }
 
 // SetState mocks base method.
-func (m *MockStateManipulator) SetState(userID int64, currency string) error {
+func (m *MockStateManipulator) SetState(ctx context.Context, userID int64, currency string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetState", userID, currency)
+	ret := m.ctrl.Call(m, "SetState", context.Background(), userID, currency)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetState indicates an expected call of SetState.
-func (mr *MockStateManipulatorMockRecorder) SetState(userID, currency interface{}) *gomock.Call {
+func (mr *MockStateManipulatorMockRecorder) SetState(ctx, userID, currency interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetState", reflect.TypeOf((*MockStateManipulator)(nil).SetState), userID, currency)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetState", reflect.TypeOf((*MockStateManipulator)(nil).SetState), context.Background(), userID, currency)
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sync"
 
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/rate"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/tg"
@@ -30,10 +31,19 @@ func main() {
 
 	rateClient := rate.New(config)
 	converter := converter.New(rateClient)
-	converter.AutoUpdateRate()
 
 	msgModel := messages.New(tgClient, storage, converter)
 	clbModel := callbacks.New(tgClient, storage)
 
-	tgClient.ListenUpdates(msgModel, clbModel)
+	wg := sync.WaitGroup{}
+
+	converter.AutoUpdateRate(&wg)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tgClient.ListenUpdates(msgModel, clbModel)
+	}()
+
+	wg.Wait()
 }

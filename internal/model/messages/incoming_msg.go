@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -18,12 +19,12 @@ type MessageSender interface {
 }
 
 type DataManipulator interface {
-	Add(userID int64, expense *Expense) error
-	Get(userID int64) ([]*Expense, error)
+	Add(ctx context.Context, userID int64, expense *Expense) error
+	Get(ctx context.Context, userID int64) ([]*Expense, error)
 }
 
 type StateManipulator interface {
-	GetState(userID int64) (string, error)
+	GetState(ctx context.Context, userID int64) (string, error)
 }
 
 type StorageManipulator interface {
@@ -126,12 +127,12 @@ func (s *Model) sendReport(msg Message) error {
 }
 
 func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
-	list, err := s.storage.Get(msg.UserID)
+	list, err := s.getExpenses(msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get expenses")
 	}
 
-	currency, err := s.storage.GetState(msg.UserID)
+	currency, err := s.getCurrencyState(msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get current state")
 	}
@@ -156,7 +157,7 @@ func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 }
 
 func (s *Model) addExpense(expense *Expense, msg Message) error {
-	currency, err := s.storage.GetState(msg.UserID)
+	currency, err := s.getCurrencyState(msg.UserID)
 	if err != nil {
 		return errors.Wrap(err, "can't get currency state")
 	}
@@ -167,12 +168,28 @@ func (s *Model) addExpense(expense *Expense, msg Message) error {
 	}
 
 	expense.Amount = value
-	err = s.storage.Add(msg.UserID, expense)
-	if err != nil {
-		return errors.Wrap(err, "expense did not add to storage")
-	}
 
-	return nil
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err = s.storage.Add(ctx, msg.UserID, expense)
+	return err
+}
+
+func (s *Model) getExpenses(userID int64) ([]*Expense, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	list, err := s.storage.Get(ctx, userID)
+	return list, err
+}
+
+func (s *Model) getCurrencyState(userID int64) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	state, err := s.storage.GetState(ctx, userID)
+	return state, err
 }
 
 var lineRe = regexp.MustCompile("^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$")

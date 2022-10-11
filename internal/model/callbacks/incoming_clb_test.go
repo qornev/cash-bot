@@ -1,6 +1,7 @@
 package callbacks
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -18,7 +19,7 @@ func Test_IncomingCallback_ShouldChangeCurrency(t *testing.T) {
 	var userID int64 = 1234
 
 	sender.EXPECT().SendMessage("Валюта изменена на USD", userID)
-	stater.EXPECT().SetState(userID, converter.USD)
+	stater.EXPECT().SetState(context.Background(), userID, converter.USD)
 
 	err := model.IncomingCallback(Callback{
 		Data:   converter.USD,

@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"context"
 	"sync"
 
+	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
 )
@@ -21,31 +23,82 @@ func New() (*Storage, error) {
 	}, nil
 }
 
-func (s *Storage) Add(userID int64, expense *messages.Expense) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.data[userID] = append(s.data[userID], expense)
-	return nil
-}
+var TimeoutStorageError = errors.New("storage connection timeout")
 
-func (s *Storage) Get(userID int64) ([]*messages.Expense, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	return s.data[userID], nil
-}
+func (s *Storage) Add(ctx context.Context, userID int64, expense *messages.Expense) error {
+	complete := make(chan struct{}, 1)
 
-func (s *Storage) SetState(userID int64, currency string) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.state[userID] = currency
-	return nil
-}
+	go func() {
+		s.mutex.Lock()
+		defer s.mutex.Unlock()
 
-func (s *Storage) GetState(userID int64) (string, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if val, ok := s.state[userID]; ok {
-		return val, nil
+		s.data[userID] = append(s.data[userID], expense)
+
+		complete <- struct{}{}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return TimeoutStorageError
+	case <-complete:
+		return nil
 	}
-	return converter.RUB, nil
+}
+
+func (s *Storage) Get(ctx context.Context, userID int64) ([]*messages.Expense, error) {
+	expenses := make(chan []*messages.Expense, 1)
+
+	go func() {
+		s.mutex.Lock()
+		defer s.mutex.Unlock()
+
+		expenses <- s.data[userID]
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, TimeoutStorageError
+	case value := <-expenses:
+		return value, nil
+	}
+}
+
+func (s *Storage) SetState(ctx context.Context, userID int64, currency string) error {
+	complete := make(chan struct{}, 1)
+
+	go func() {
+		s.mutex.Lock()
+		defer s.mutex.Unlock()
+
+		s.state[userID] = currency
+		complete <- struct{}{}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return TimeoutStorageError
+	case <-complete:
+		return nil
+	}
+}
+
+func (s *Storage) GetState(ctx context.Context, userID int64) (string, error) {
+	currency := make(chan string, 1)
+
+	go func() {
+		s.mutex.Lock()
+		defer s.mutex.Unlock()
+
+		if val, ok := s.state[userID]; ok {
+			currency <- val
+		}
+		currency <- converter.RUB
+	}()
+
+	select {
+	case <-ctx.Done():
+		return "", TimeoutStorageError
+	case value := <-currency:
+		return value, nil
+	}
 }

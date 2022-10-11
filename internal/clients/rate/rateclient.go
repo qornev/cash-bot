@@ -4,30 +4,42 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 )
 
-type HeaderGetter interface {
+type ConfigGetter interface {
 	Key() string
 	Host() string
+	Timeout() time.Duration
 }
 
-type Service struct {
+type Params struct {
 	Key  string
 	Host string
 }
 
-func New(headerGetter HeaderGetter) *Service {
-	return &Service{
-		Key:  headerGetter.Key(),
-		Host: headerGetter.Host(),
+type Client struct {
+	client *http.Client
+	params Params
+}
+
+func New(configGetter ConfigGetter) *Client {
+	return &Client{
+		client: &http.Client{
+			Timeout: configGetter.Timeout(),
+		},
+		params: Params{
+			Key:  configGetter.Key(),
+			Host: configGetter.Host(),
+		},
 	}
 }
 
-func (s *Service) GetUpdate() (*converter.Rate, error) {
-	rawJSON, err := s.getRequestRate()
+func (c *Client) GetUpdate() (*converter.Rate, error) {
+	rawJSON, err := c.getRequestRate()
 	if err != nil {
 		return nil, errors.Wrap(err, "can't complete get request")
 	}
@@ -44,16 +56,16 @@ func (s *Service) GetUpdate() (*converter.Rate, error) {
 
 const url = "https://currency-conversion-and-exchange-rates.p.rapidapi.com/latest"
 
-func (s *Service) getRequestRate() ([]byte, error) {
+func (c *Client) getRequestRate() ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "get request exit with error")
 	}
 
-	req.Header.Add("X-RapidAPI-Key", s.Key)
-	req.Header.Add("X-RapidAPI-Host", s.Host)
+	req.Header.Add("X-RapidAPI-Key", c.params.Key)
+	req.Header.Add("X-RapidAPI-Host", c.params.Host)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "response error")
 	}

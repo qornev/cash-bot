@@ -82,7 +82,7 @@ func (m *Model) GetRate() Rate {
 
 var CurrencyNotExistError = errors.New("currency not exist")
 
-func (m *Model) getCurrancyRate(currency string) (float64, error) {
+func (m *Model) getCurrencyRate(currency string) (float64, error) {
 	if m.rate == nil {
 		err := m.UpdateRate()
 		if err != nil {
@@ -105,12 +105,12 @@ func (m *Model) getCurrancyRate(currency string) (float64, error) {
 }
 
 func (m *Model) Exchange(amount float64, from string, to string) (float64, error) {
-	fromRate, err := m.getCurrancyRate(from)
+	fromRate, err := m.getCurrencyRate(from)
 	if err != nil {
 		return fromRate, errors.Wrap(err, "can't get from value in exchage")
 	}
 
-	toRate, err := m.getCurrancyRate(to)
+	toRate, err := m.getCurrencyRate(to)
 	if err != nil {
 		return toRate, errors.Wrap(err, "can't get to value in exchange")
 	}

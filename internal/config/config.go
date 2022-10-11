@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -14,8 +15,9 @@ type Config struct {
 		Token string `yaml:"token"`
 	} `yaml:"telegram"`
 	RateApi struct {
-		Key  string `yaml:"key"`
-		Host string `yaml:"host"`
+		Key     string `yaml:"key"`
+		Host    string `yaml:"host"`
+		Timeout int    `yaml:"timeout"`
 	} `yaml:"rateApi"`
 }
 
@@ -53,4 +55,8 @@ func (s *Service) Key() string {
 
 func (s *Service) Host() string {
 	return s.config.RateApi.Host
+}
+
+func (s *Service) Timeout() time.Duration {
+	return time.Duration(s.config.RateApi.Timeout) * time.Second
 }

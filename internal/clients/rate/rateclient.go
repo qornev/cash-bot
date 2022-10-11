@@ -1,10 +1,10 @@
 package rate
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
@@ -13,7 +13,6 @@ import (
 type ConfigGetter interface {
 	Key() string
 	Host() string
-	Timeout() time.Duration
 }
 
 type Params struct {
@@ -28,9 +27,7 @@ type Client struct {
 
 func New(configGetter ConfigGetter) *Client {
 	return &Client{
-		client: &http.Client{
-			Timeout: configGetter.Timeout(),
-		},
+		client: &http.Client{},
 		params: Params{
 			Key:  configGetter.Key(),
 			Host: configGetter.Host(),
@@ -38,8 +35,8 @@ func New(configGetter ConfigGetter) *Client {
 	}
 }
 
-func (c *Client) GetUpdate() (*converter.Rate, error) {
-	rawJSON, err := c.getRequestRate()
+func (c *Client) GetUpdate(ctx context.Context) (*converter.Rate, error) {
+	rawJSON, err := c.getRequestRate(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't complete get request")
 	}
@@ -56,7 +53,7 @@ func (c *Client) GetUpdate() (*converter.Rate, error) {
 
 const url = "https://currency-conversion-and-exchange-rates.p.rapidapi.com/latest"
 
-func (c *Client) getRequestRate() ([]byte, error) {
+func (c *Client) getRequestRate(ctx context.Context) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "get request exit with error")
@@ -64,6 +61,8 @@ func (c *Client) getRequestRate() ([]byte, error) {
 
 	req.Header.Add("X-RapidAPI-Key", c.params.Key)
 	req.Header.Add("X-RapidAPI-Host", c.params.Host)
+
+	req = req.WithContext(ctx)
 
 	res, err := c.client.Do(req)
 	if err != nil {

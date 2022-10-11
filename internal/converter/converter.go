@@ -9,7 +9,7 @@ import (
 )
 
 type RateUpdater interface {
-	GetUpdate() (*Rate, error)
+	GetUpdate(ctx context.Context) (*Rate, error)
 }
 
 type Rate struct {
@@ -52,7 +52,7 @@ func (m *Model) UpdateRate() error {
 	chErr := make(chan error, 1) // infinity goroutine in line 51
 
 	go func() {
-		value, err := m.rateClient.GetUpdate()
+		value, err := m.rateClient.GetUpdate(ctx)
 		if err != nil {
 			chErr <- err
 			return

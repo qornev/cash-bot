@@ -4,4 +4,3 @@ telegram:
 rateApi:
   key: YOUR_API_KEY
   host: YOUR_API_HOST
-  timeout: 30

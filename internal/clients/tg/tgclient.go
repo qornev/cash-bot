@@ -1,7 +1,9 @@
 package tg
 
 import (
+	"context"
 	"log"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
@@ -20,6 +22,7 @@ type Client struct {
 
 func New(tokenGetter TokenGetter) (*Client, error) {
 	client, err := tgbotapi.NewBotAPI(tokenGetter.Token())
+	client.StopReceivingUpdates()
 	if err != nil {
 		return nil, errors.Wrap(err, "NewBotAPI")
 	}
@@ -98,4 +101,19 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 			}
 		}
 	}
+}
+
+func (c *Client) AutoListenUpdates(ctx context.Context, wg *sync.WaitGroup, msgModel *messages.Model, clbModel *callbacks.Model) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.ListenUpdates(msgModel, clbModel)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		c.client.StopReceivingUpdates()
+	}()
 }

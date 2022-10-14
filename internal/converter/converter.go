@@ -31,7 +31,7 @@ func New(rateClient RateUpdater) *Model {
 	}
 }
 
-func (m *Model) AutoUpdateRate(wg *sync.WaitGroup) {
+func (m *Model) AutoUpdateRate(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(time.Hour)
 
 	wg.Add(1)
@@ -39,10 +39,14 @@ func (m *Model) AutoUpdateRate(wg *sync.WaitGroup) {
 		defer wg.Done()
 
 		for {
-			<-ticker.C
-			if err := m.UpdateRate(); err != nil {
-				log.Println("error processing rate update:", err)
-				break
+			select {
+			case <-ticker.C:
+				if err := m.UpdateRate(); err != nil {
+					log.Println("error processing rate update:", err)
+					break
+				}
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
 	"sync"
 
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/rate"
@@ -14,6 +17,9 @@ import (
 )
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
+
 	config, err := config.New()
 	if err != nil {
 		log.Fatal("config init failed:", err)
@@ -36,14 +42,10 @@ func main() {
 	clbModel := callbacks.New(tgClient, storage)
 
 	wg := sync.WaitGroup{}
+	converter.AutoUpdateRate(ctx, &wg)
+	tgClient.AutoListenUpdates(ctx, &wg, msgModel, clbModel)
 
-	converter.AutoUpdateRate(&wg)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		tgClient.ListenUpdates(msgModel, clbModel)
-	}()
-
+	<-ctx.Done()
 	wg.Wait()
+	log.Println("all process are finished")
 }

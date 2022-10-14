@@ -1,1 +1,6 @@
-token: YOUR_ACCESS_TOKEN
+telegram:
+  token: YOUR_ACCESS_TOKEN
+
+rateApi:
+  key: YOUR_API_KEY
+  host: YOUR_API_HOST

@@ -2,4 +2,4 @@
 /.vscode
 /.idea
 /data
-/postgres-data
+/.postgres-data

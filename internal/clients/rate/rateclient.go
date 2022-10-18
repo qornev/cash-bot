@@ -35,7 +35,7 @@ func New(configGetter ConfigGetter) *Client {
 	}
 }
 
-func (c *Client) GetUpdate(ctx context.Context) (*converter.Rate, error) {
+func (c *Client) GetUpdate(ctx context.Context) (*converter.CurrentRate, error) {
 	rawJSON, err := c.getRequestRate(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't complete get request")
@@ -46,9 +46,9 @@ func (c *Client) GetUpdate(ctx context.Context) (*converter.Rate, error) {
 		return nil, errors.Wrap(err, "can't complete parse response")
 	}
 
-	rate := changeEURBaseToRUB(responseRate)
+	currentRate := changeEURBaseToRUB(responseRate)
 
-	return rate, nil
+	return currentRate, nil
 }
 
 const url = "https://currency-conversion-and-exchange-rates.p.rapidapi.com/latest"
@@ -96,8 +96,8 @@ func parseRates(rawJSON []byte) (*ResponseRate, error) {
 	return &responseRate, nil
 }
 
-func changeEURBaseToRUB(responseRate *ResponseRate) *converter.Rate {
-	return &converter.Rate{
+func changeEURBaseToRUB(responseRate *ResponseRate) *converter.CurrentRate {
+	return &converter.CurrentRate{
 		EUR: responseRate.Rates.RUB,
 		USD: (1.0 / responseRate.Rates.USD) * responseRate.Rates.RUB,
 		CNY: (1.0 / responseRate.Rates.CNY) * responseRate.Rates.RUB,

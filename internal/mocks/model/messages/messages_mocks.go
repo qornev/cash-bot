@@ -9,13 +9,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	domain "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
-
-type Expense struct {
-	Amount   float64
-	Category string
-	Date     int64
-}
 
 // MockMessageSender is a mock of MessageSender interface.
 type MockMessageSender struct {
@@ -68,161 +63,94 @@ func (mr *MockMessageSenderMockRecorder) SendMessageWithKeyboard(text, keyboardM
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessageWithKeyboard", reflect.TypeOf((*MockMessageSender)(nil).SendMessageWithKeyboard), text, keyboardMarkup, userID)
 }
 
-// MockDataManipulator is a mock of DataManipulator interface.
-type MockDataManipulator struct {
+// MockExpenseManipulator is a mock of ExpenseManipulator interface.
+type MockExpenseManipulator struct {
 	ctrl     *gomock.Controller
-	recorder *MockDataManipulatorMockRecorder
+	recorder *MockExpenseManipulatorMockRecorder
 }
 
-// MockDataManipulatorMockRecorder is the mock recorder for MockDataManipulator.
-type MockDataManipulatorMockRecorder struct {
-	mock *MockDataManipulator
+// MockExpenseManipulatorMockRecorder is the mock recorder for MockExpenseManipulator.
+type MockExpenseManipulatorMockRecorder struct {
+	mock *MockExpenseManipulator
 }
 
-// NewMockDataManipulator creates a new mock instance.
-func NewMockDataManipulator(ctrl *gomock.Controller) *MockDataManipulator {
-	mock := &MockDataManipulator{ctrl: ctrl}
-	mock.recorder = &MockDataManipulatorMockRecorder{mock}
+// NewMockExpenseManipulator creates a new mock instance.
+func NewMockExpenseManipulator(ctrl *gomock.Controller) *MockExpenseManipulator {
+	mock := &MockExpenseManipulator{ctrl: ctrl}
+	mock.recorder = &MockExpenseManipulatorMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDataManipulator) EXPECT() *MockDataManipulatorMockRecorder {
+func (m *MockExpenseManipulator) EXPECT() *MockExpenseManipulatorMockRecorder {
 	return m.recorder
 }
 
 // Add mocks base method.
-func (m *MockDataManipulator) Add(ctx context.Context, userID int64, expense *Expense) error {
+func (m *MockExpenseManipulator) Add(ctx context.Context, date, userID int64, category string, amount float64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", ctx, userID, expense)
+	ret := m.ctrl.Call(m, "Add", ctx, date, userID, category, amount)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockDataManipulatorMockRecorder) Add(ctx, userID, expense interface{}) *gomock.Call {
+func (mr *MockExpenseManipulatorMockRecorder) Add(ctx, date, userID, category, amount interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockDataManipulator)(nil).Add), ctx, userID, expense)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockExpenseManipulator)(nil).Add), ctx, date, userID, category, amount)
 }
 
 // Get mocks base method.
-func (m *MockDataManipulator) Get(ctx context.Context, userID int64) ([]*Expense, error) {
+func (m *MockExpenseManipulator) Get(ctx context.Context, userID int64) ([]*domain.Expense, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, userID)
-	ret0, _ := ret[0].([]*Expense)
+	ret0, _ := ret[0].([]*domain.Expense)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockDataManipulatorMockRecorder) Get(ctx, userID interface{}) *gomock.Call {
+func (mr *MockExpenseManipulatorMockRecorder) Get(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDataManipulator)(nil).Get), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockExpenseManipulator)(nil).Get), ctx, userID)
 }
 
-// MockStateManipulator is a mock of StateManipulator interface.
-type MockStateManipulator struct {
+// MockUserManipulator is a mock of UserManipulator interface.
+type MockUserManipulator struct {
 	ctrl     *gomock.Controller
-	recorder *MockStateManipulatorMockRecorder
+	recorder *MockUserManipulatorMockRecorder
 }
 
-// MockStateManipulatorMockRecorder is the mock recorder for MockStateManipulator.
-type MockStateManipulatorMockRecorder struct {
-	mock *MockStateManipulator
+// MockUserManipulatorMockRecorder is the mock recorder for MockUserManipulator.
+type MockUserManipulatorMockRecorder struct {
+	mock *MockUserManipulator
 }
 
-// NewMockStateManipulator creates a new mock instance.
-func NewMockStateManipulator(ctrl *gomock.Controller) *MockStateManipulator {
-	mock := &MockStateManipulator{ctrl: ctrl}
-	mock.recorder = &MockStateManipulatorMockRecorder{mock}
+// NewMockUserManipulator creates a new mock instance.
+func NewMockUserManipulator(ctrl *gomock.Controller) *MockUserManipulator {
+	mock := &MockUserManipulator{ctrl: ctrl}
+	mock.recorder = &MockUserManipulatorMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStateManipulator) EXPECT() *MockStateManipulatorMockRecorder {
+func (m *MockUserManipulator) EXPECT() *MockUserManipulatorMockRecorder {
 	return m.recorder
-}
-
-// GetState mocks base method.
-func (m *MockStateManipulator) GetState(ctx context.Context, userID int64) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetState", ctx, userID)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetState indicates an expected call of GetState.
-func (mr *MockStateManipulatorMockRecorder) GetState(ctx, userID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockStateManipulator)(nil).GetState), ctx, userID)
-}
-
-// MockStorageManipulator is a mock of StorageManipulator interface.
-type MockStorageManipulator struct {
-	ctrl     *gomock.Controller
-	recorder *MockStorageManipulatorMockRecorder
-}
-
-// MockStorageManipulatorMockRecorder is the mock recorder for MockStorageManipulator.
-type MockStorageManipulatorMockRecorder struct {
-	mock *MockStorageManipulator
-}
-
-// NewMockStorageManipulator creates a new mock instance.
-func NewMockStorageManipulator(ctrl *gomock.Controller) *MockStorageManipulator {
-	mock := &MockStorageManipulator{ctrl: ctrl}
-	mock.recorder = &MockStorageManipulatorMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStorageManipulator) EXPECT() *MockStorageManipulatorMockRecorder {
-	return m.recorder
-}
-
-// Add mocks base method.
-func (m *MockStorageManipulator) Add(ctx context.Context, userID int64, expense *Expense) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", ctx, userID, expense)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Add indicates an expected call of Add.
-func (mr *MockStorageManipulatorMockRecorder) Add(ctx, userID, expense interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockStorageManipulator)(nil).Add), ctx, userID, expense)
 }
 
 // Get mocks base method.
-func (m *MockStorageManipulator) Get(ctx context.Context, userID int64) ([]*Expense, error) {
+func (m *MockUserManipulator) Get(ctx context.Context, userID int64) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, userID)
-	ret0, _ := ret[0].([]*Expense)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockStorageManipulatorMockRecorder) Get(ctx, userID interface{}) *gomock.Call {
+func (mr *MockUserManipulatorMockRecorder) Get(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorageManipulator)(nil).Get), ctx, userID)
-}
-
-// GetState mocks base method.
-func (m *MockStorageManipulator) GetState(ctx context.Context, userID int64) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetState", ctx, userID)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetState indicates an expected call of GetState.
-func (mr *MockStorageManipulatorMockRecorder) GetState(ctx, userID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockStorageManipulator)(nil).GetState), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUserManipulator)(nil).Get), ctx, userID)
 }
 
 // MockConverter is a mock of Converter interface.

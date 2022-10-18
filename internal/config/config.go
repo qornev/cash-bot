@@ -9,18 +9,26 @@ import (
 
 const configFile = "data/config.yaml"
 
-type Config struct {
-	Telegram struct {
-		Token string `yaml:"token"`
-	} `yaml:"telegram"`
-	RateApi struct {
-		Key  string `yaml:"key"`
-		Host string `yaml:"host"`
-	} `yaml:"rateApi"`
+type TelegramConfig struct {
+	Token string `yaml:"token"`
+}
+
+type RateConfig struct {
+	Key  string `yaml:"key"`
+	Host string `yaml:"host"`
 }
 
 type Service struct {
-	config Config
+	tg   TelegramConfig `yaml:"telegram"`
+	rate RateConfig     `yaml:"rateApi"`
+	db   DatabaseConfig `yaml:"database"`
+}
+
+type DatabaseConfig struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 func New() (*Service, error) {
@@ -35,7 +43,7 @@ func NewFromFile(filePath string) (*Service, error) {
 		return nil, errors.Wrap(err, "reading config file")
 	}
 
-	err = yaml.Unmarshal(rawYAML, &s.config)
+	err = yaml.Unmarshal(rawYAML, &s)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing yaml")
 	}
@@ -43,14 +51,36 @@ func NewFromFile(filePath string) (*Service, error) {
 	return s, nil
 }
 
+// TELEGRAM
+
 func (s *Service) Token() string {
-	return s.config.Telegram.Token
+	return s.tg.Token
 }
 
+// RATE API
+
 func (s *Service) Key() string {
-	return s.config.RateApi.Key
+	return s.rate.Key
 }
 
 func (s *Service) Host() string {
-	return s.config.RateApi.Host
+	return s.rate.Host
+}
+
+// DATABASE
+
+func (s *Service) HostDB() string {
+	return s.db.Host
+}
+
+func (s *Service) Port() int {
+	return s.db.Port
+}
+
+func (s *Service) Username() string {
+	return s.db.Username
+}
+
+func (s *Service) Password() string {
+	return s.db.Password
 }

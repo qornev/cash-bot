@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 type MessageSender interface {
@@ -18,18 +19,13 @@ type MessageSender interface {
 	SendMessageWithKeyboard(text string, keyboardMarkup string, userID int64) error
 }
 
-type DataManipulator interface {
-	Add(ctx context.Context, userID int64, expense *Expense) error
-	Get(ctx context.Context, userID int64) ([]*Expense, error)
+type ExpenseManipulator interface {
+	Add(ctx context.Context, date int64, userID int64, category string, amount float64) error
+	Get(ctx context.Context, userID int64) ([]*domain.Expense, error)
 }
 
-type StateManipulator interface {
-	GetState(ctx context.Context, userID int64) (string, error)
-}
-
-type StorageManipulator interface {
-	DataManipulator
-	StateManipulator
+type UserManipulator interface {
+	Get(ctx context.Context, userID int64) (string, error)
 }
 
 type Converter interface {
@@ -38,14 +34,16 @@ type Converter interface {
 
 type Model struct {
 	tgClient  MessageSender
-	storage   StorageManipulator
+	userDB    UserManipulator
+	expenseDB ExpenseManipulator
 	converter Converter
 }
 
-func New(tgClient MessageSender, storage StorageManipulator, converter Converter) *Model {
+func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, converter Converter) *Model {
 	return &Model{
 		tgClient:  tgClient,
-		storage:   storage,
+		userDB:    userDB,
+		expenseDB: expenseDB,
 		converter: converter,
 	}
 }
@@ -53,12 +51,6 @@ func New(tgClient MessageSender, storage StorageManipulator, converter Converter
 type Message struct {
 	Text   string
 	UserID int64
-}
-
-type Expense struct {
-	Amount   float64
-	Category string
-	Date     int64
 }
 
 const greeting = `Бот для учета расходов
@@ -132,7 +124,7 @@ func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 		return "", errors.Wrap(err, "can't get expenses")
 	}
 
-	currency, err := s.getCurrencyState(msg.UserID)
+	code, err := s.getCode(msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get current state")
 	}
@@ -146,23 +138,23 @@ func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 
 	var report strings.Builder
 	for key, value := range sum {
-		value, err = s.converter.Exchange(value, converter.RUB, currency)
+		value, err = s.converter.Exchange(value, converter.RUB, code)
 		if err != nil {
 			return "", errors.Wrap(err, "can't convert value")
 		}
-		fmt.Fprintf(&report, "%s - %.2f %s\n", key, value, currency)
+		fmt.Fprintf(&report, "%s - %.2f %s\n", key, value, code)
 	}
 
 	return report.String(), nil
 }
 
-func (s *Model) addExpense(expense *Expense, msg Message) error {
-	currency, err := s.getCurrencyState(msg.UserID)
+func (s *Model) addExpense(expense *domain.Expense, msg Message) error {
+	code, err := s.getCode(msg.UserID)
 	if err != nil {
-		return errors.Wrap(err, "can't get currency state")
+		return errors.Wrap(err, "can't get code state")
 	}
 
-	value, err := s.converter.Exchange(expense.Amount, currency, converter.RUB)
+	value, err := s.converter.Exchange(expense.Amount, code, converter.RUB)
 	if err != nil {
 		return errors.Wrap(err, "can't convert value")
 	}
@@ -172,31 +164,31 @@ func (s *Model) addExpense(expense *Expense, msg Message) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err = s.storage.Add(ctx, msg.UserID, expense)
+	err = s.expenseDB.Add(ctx, expense.Date, msg.UserID, expense.Category, expense.Amount)
 	return err
 }
 
-func (s *Model) getExpenses(userID int64) ([]*Expense, error) {
+func (s *Model) getExpenses(userID int64) ([]*domain.Expense, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	list, err := s.storage.Get(ctx, userID)
+	list, err := s.expenseDB.Get(ctx, userID)
 	return list, err
 }
 
-func (s *Model) getCurrencyState(userID int64) (string, error) {
+func (s *Model) getCode(userID int64) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	state, err := s.storage.GetState(ctx, userID)
-	return state, err
+	code, err := s.userDB.Get(ctx, userID)
+	return code, err
 }
 
 var lineRe = regexp.MustCompile("^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$")
 
 var errIncorrectLine = errors.New("Incorrect line")
 
-func parseLine(text string) (*Expense, error) {
+func parseLine(text string) (*domain.Expense, error) {
 	matches := lineRe.FindStringSubmatch(text)
 	if len(matches) < 4 {
 		return nil, errIncorrectLine
@@ -219,7 +211,7 @@ func parseLine(text string) (*Expense, error) {
 		}
 	}
 
-	return &Expense{
+	return &domain.Expense{
 		Amount:   amount,
 		Category: category,
 		Date:     date.Unix(),

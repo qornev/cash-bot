@@ -3,8 +3,7 @@
 create table rates 
 (
     id         integer generated always as identity primary key,
-    created_at timestamp not null default now(),
-    unix_ts    integer   not null,
+    dt         integer   not null,
     code       text      not null,
     nominal    real      not null
 );

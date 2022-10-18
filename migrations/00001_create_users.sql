@@ -2,8 +2,8 @@
 -- +goose StatementBegin
 create table users
 (
-    id       integer generated always as identity primary key,
-    currency text not null
+    id   integer generated always as identity primary key,
+    code text not null
 );
 -- +goose StatementEnd
 

@@ -3,3 +3,4 @@
 /.idea
 /data
 /.postgres-data
+/db.session.sql

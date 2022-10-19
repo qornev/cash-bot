@@ -38,18 +38,17 @@ func (db *RateDB) Add(ctx context.Context, date int64, code string, nominal floa
 func (db *RateDB) Get(ctx context.Context, date int64, code string) (*converter.Rate, error) {
 	const query = `
 		select 
-			id, 
-			dt, 
 			code, 
 			nominal
 		from rates
 		where 1 = 1
 			and code = $1
 			and dt <= $2
-		order by created_at desc;
+			and $2 - dt <= 24 * 60 * 60 -- difference in 1 day
+		order by dt desc;
 	`
 	var rate converter.Rate
-	err := db.db.QueryRowContext(ctx, query, code, date).Scan(&rate)
+	err := db.db.QueryRowContext(ctx, query, code, date).Scan(&rate.Code, &rate.Nominal)
 
 	return &rate, err
 }

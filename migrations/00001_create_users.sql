@@ -2,8 +2,10 @@
 -- +goose StatementBegin
 create table users
 (
-    id   integer generated always as identity primary key,
-    code text not null
+    id     integer primary key,
+    code       text    not null,
+    budget     real,
+    updated_at integer not null
 );
 -- +goose StatementEnd
 

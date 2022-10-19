@@ -101,10 +101,10 @@ func (mr *MockExpenseManipulatorMockRecorder) Add(ctx, date, userID, category, a
 }
 
 // Get mocks base method.
-func (m *MockExpenseManipulator) Get(ctx context.Context, userID int64) ([]*domain.Expense, error) {
+func (m *MockExpenseManipulator) Get(ctx context.Context, userID int64) ([]domain.Expense, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, userID)
-	ret0, _ := ret[0].([]*domain.Expense)
+	ret0, _ := ret[0].([]domain.Expense)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -138,19 +138,50 @@ func (m *MockUserManipulator) EXPECT() *MockUserManipulatorMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockUserManipulator) Get(ctx context.Context, userID int64) (string, error) {
+// GetBudget mocks base method.
+func (m *MockUserManipulator) GetBudget(ctx context.Context, userID int64) (*float64, string, int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, userID)
+	ret := m.ctrl.Call(m, "GetBudget", ctx, userID)
+	ret0, _ := ret[0].(*float64)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(int64)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
+}
+
+// GetBudget indicates an expected call of GetBudget.
+func (mr *MockUserManipulatorMockRecorder) GetBudget(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBudget", reflect.TypeOf((*MockUserManipulator)(nil).GetBudget), ctx, userID)
+}
+
+// GetCode mocks base method.
+func (m *MockUserManipulator) GetCode(ctx context.Context, userID int64) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCode", ctx, userID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockUserManipulatorMockRecorder) Get(ctx, userID interface{}) *gomock.Call {
+// GetCode indicates an expected call of GetCode.
+func (mr *MockUserManipulatorMockRecorder) GetCode(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUserManipulator)(nil).Get), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCode", reflect.TypeOf((*MockUserManipulator)(nil).GetCode), ctx, userID)
+}
+
+// SetBudget mocks base method.
+func (m *MockUserManipulator) SetBudget(ctx context.Context, userID int64, budget float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBudget", ctx, userID, budget)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetBudget indicates an expected call of SetBudget.
+func (mr *MockUserManipulatorMockRecorder) SetBudget(ctx, userID, budget interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBudget", reflect.TypeOf((*MockUserManipulator)(nil).SetBudget), ctx, userID, budget)
 }
 
 // MockConverter is a mock of Converter interface.
@@ -189,4 +220,33 @@ func (m *MockConverter) Exchange(value float64, from, to string) (float64, error
 func (mr *MockConverterMockRecorder) Exchange(value, from, to interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockConverter)(nil).Exchange), value, from, to)
+}
+
+// GetHistoricalCodeRate mocks base method.
+func (m *MockConverter) GetHistoricalCodeRate(code string, date int64) (float64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHistoricalCodeRate", code, date)
+	ret0, _ := ret[0].(float64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHistoricalCodeRate indicates an expected call of GetHistoricalCodeRate.
+func (mr *MockConverterMockRecorder) GetHistoricalCodeRate(code, date interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalCodeRate", reflect.TypeOf((*MockConverter)(nil).GetHistoricalCodeRate), code, date)
+}
+
+// UpdateHistoricalRates mocks base method.
+func (m *MockConverter) UpdateHistoricalRates(date *int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateHistoricalRates", date)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateHistoricalRates indicates an expected call of UpdateHistoricalRates.
+func (mr *MockConverterMockRecorder) UpdateHistoricalRates(date interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateHistoricalRates", reflect.TypeOf((*MockConverter)(nil).UpdateHistoricalRates), date)
 }

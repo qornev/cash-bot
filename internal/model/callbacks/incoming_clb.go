@@ -13,7 +13,7 @@ type MessageSender interface {
 }
 
 type UserManipulator interface {
-	Set(ctx context.Context, userID int64, code string) error
+	SetCode(ctx context.Context, userID int64, code string) error
 }
 
 type Model struct {
@@ -34,18 +34,21 @@ type Callback struct {
 	Data string
 }
 
+// Callbacks routing
 func (s *Model) IncomingCallback(clb Callback) error {
 	err := s.setCode(clb.UserID, clb.Data)
 	if err != nil {
 		return errors.Wrap(err, "can't set code state")
 	}
+
 	return s.tgClient.SendMessage(fmt.Sprintf("Валюта изменена на %s", clb.Data), clb.UserID)
 }
 
+// Set currency with `code` to user
 func (s *Model) setCode(userID int64, code string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err := s.userDB.Set(ctx, userID, code)
+	err := s.userDB.SetCode(ctx, userID, code)
 	return err
 }

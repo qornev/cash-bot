@@ -48,7 +48,7 @@ func Test_OnCurrencyCommand_ShouldAnswerWithKeyboardMessage(t *testing.T) {
 func Test_ParseLine_ShouldFillConsumptionFields(t *testing.T) {
 	line := "123.4 еда 2020-02-02"
 
-	cons, err := parseLine(line)
+	cons, err := parseExpense(line)
 
 	date, _ := time.Parse("2006-01-02", "2020-02-02")
 	assert.NoError(t, err)
@@ -62,7 +62,7 @@ func Test_ParseLine_ShouldFillConsumptionFields(t *testing.T) {
 func Test_ParseLine_ShouldFillConsumptionFields_NoDataNoPointBadCategory(t *testing.T) {
 	line := "1234 еДSdа"
 
-	cons, err := parseLine(line)
+	cons, err := parseExpense(line)
 
 	assert.NoError(t, err)
 	assert.Equal(t, float64(1234), cons.Amount)
@@ -73,7 +73,7 @@ func Test_ParseLine_ShouldFillConsumptionFields_NoDataNoPointBadCategory(t *test
 func Test_ParseLine_ShouldFillConsumptionFields_WrongLine(t *testing.T) {
 	line := "1.2s34 еДS3dа "
 
-	cons, err := parseLine(line)
+	cons, err := parseExpense(line)
 
 	assert.Error(t, err)
 	assert.Nil(t, cons)
@@ -82,7 +82,7 @@ func Test_ParseLine_ShouldFillConsumptionFields_WrongLine(t *testing.T) {
 func Test_ParseLine_ShouldFillConsumptionFields_WrongDate(t *testing.T) {
 	line := "123.4 еда 2020-92-92"
 
-	cons, err := parseLine(line)
+	cons, err := parseExpense(line)
 
 	assert.Error(t, err)
 	assert.Nil(t, cons)
@@ -102,13 +102,14 @@ func Test_onAddExpense_ShouldListExpense(t *testing.T) {
 	category := "еда"
 	amount := 1234.56
 
-	userDB.EXPECT().Get(gomock.Any(), userID).Return(converter.RUB, nil)
+	userDB.EXPECT().GetCode(gomock.Any(), userID).Return(converter.RUB, nil)
 	conver.EXPECT().Exchange(amount, converter.RUB, converter.RUB).Return(amount, nil)
 	expenseDB.EXPECT().Add(gomock.Any(), date.Unix(), userID, category, amount)
 	sender.EXPECT().SendMessage("Расход записан:)", userID)
 
-	model.IncomingMessage(Message{
+	err := model.IncomingMessage(Message{
 		Text:   fmt.Sprintf("%.2f %s %s", amount, category, dateString),
 		UserID: userID,
 	})
+	assert.NoError(t, err)
 }

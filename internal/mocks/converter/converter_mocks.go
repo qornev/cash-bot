@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	converter "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
+	domain "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 // MockRateUpdater is a mock of RateUpdater interface.
@@ -36,18 +37,18 @@ func (m *MockRateUpdater) EXPECT() *MockRateUpdaterMockRecorder {
 }
 
 // GetUpdate mocks base method.
-func (m *MockRateUpdater) GetUpdate(ctx context.Context) (*converter.CurrentRate, error) {
+func (m *MockRateUpdater) GetUpdate(ctx context.Context, date *int64) (*converter.Rates, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUpdate", ctx)
-	ret0, _ := ret[0].(*converter.CurrentRate)
+	ret := m.ctrl.Call(m, "GetUpdate", ctx, date)
+	ret0, _ := ret[0].(*converter.Rates)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUpdate indicates an expected call of GetUpdate.
-func (mr *MockRateUpdaterMockRecorder) GetUpdate(ctx interface{}) *gomock.Call {
+func (mr *MockRateUpdaterMockRecorder) GetUpdate(ctx, date interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdate", reflect.TypeOf((*MockRateUpdater)(nil).GetUpdate), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdate", reflect.TypeOf((*MockRateUpdater)(nil).GetUpdate), ctx, date)
 }
 
 // MockRateManipulator is a mock of RateManipulator interface.
@@ -85,4 +86,71 @@ func (m *MockRateManipulator) Add(ctx context.Context, date int64, code string, 
 func (mr *MockRateManipulatorMockRecorder) Add(ctx, date, code, nominal interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockRateManipulator)(nil).Add), ctx, date, code, nominal)
+}
+
+// Get mocks base method.
+func (m *MockRateManipulator) Get(ctx context.Context, date int64, code string) (*converter.Rate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, date, code)
+	ret0, _ := ret[0].(*converter.Rate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockRateManipulatorMockRecorder) Get(ctx, date, code interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRateManipulator)(nil).Get), ctx, date, code)
+}
+
+// MockUserManipulator is a mock of UserManipulator interface.
+type MockUserManipulator struct {
+	ctrl     *gomock.Controller
+	recorder *MockUserManipulatorMockRecorder
+}
+
+// MockUserManipulatorMockRecorder is the mock recorder for MockUserManipulator.
+type MockUserManipulatorMockRecorder struct {
+	mock *MockUserManipulator
+}
+
+// NewMockUserManipulator creates a new mock instance.
+func NewMockUserManipulator(ctrl *gomock.Controller) *MockUserManipulator {
+	mock := &MockUserManipulator{ctrl: ctrl}
+	mock.recorder = &MockUserManipulatorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUserManipulator) EXPECT() *MockUserManipulatorMockRecorder {
+	return m.recorder
+}
+
+// GetAllUsers mocks base method.
+func (m *MockUserManipulator) GetAllUsers(ctx context.Context) ([]domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllUsers", ctx)
+	ret0, _ := ret[0].([]domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllUsers indicates an expected call of GetAllUsers.
+func (mr *MockUserManipulatorMockRecorder) GetAllUsers(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllUsers", reflect.TypeOf((*MockUserManipulator)(nil).GetAllUsers), ctx)
+}
+
+// UpdateBudget mocks base method.
+func (m *MockUserManipulator) UpdateBudget(ctx context.Context, userID int64, budget float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBudget", ctx, userID, budget)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateBudget indicates an expected call of UpdateBudget.
+func (mr *MockUserManipulatorMockRecorder) UpdateBudget(ctx, userID, budget interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBudget", reflect.TypeOf((*MockUserManipulator)(nil).UpdateBudget), ctx, userID, budget)
 }

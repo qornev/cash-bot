@@ -18,17 +18,17 @@ type RateConfig struct {
 	Host string `yaml:"host"`
 }
 
-type Service struct {
-	tg   TelegramConfig `yaml:"telegram"`
-	rate RateConfig     `yaml:"rateApi"`
-	db   DatabaseConfig `yaml:"database"`
-}
-
 type DatabaseConfig struct {
 	Host     string `yaml:"host"`
 	Port     int    `yaml:"port"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
+}
+
+type Service struct {
+	Tg   TelegramConfig `yaml:"telegram"`
+	Rate RateConfig     `yaml:"rateApi"`
+	DB   DatabaseConfig `yaml:"database"`
 }
 
 func New() (*Service, error) {
@@ -54,33 +54,33 @@ func NewFromFile(filePath string) (*Service, error) {
 // TELEGRAM
 
 func (s *Service) Token() string {
-	return s.tg.Token
+	return s.Tg.Token
 }
 
 // RATE API
 
 func (s *Service) Key() string {
-	return s.rate.Key
+	return s.Rate.Key
 }
 
 func (s *Service) Host() string {
-	return s.rate.Host
+	return s.Rate.Host
 }
 
 // DATABASE
 
 func (s *Service) HostDB() string {
-	return s.db.Host
+	return s.DB.Host
 }
 
 func (s *Service) Port() int {
-	return s.db.Port
+	return s.DB.Port
 }
 
 func (s *Service) Username() string {
-	return s.db.Username
+	return s.DB.Username
 }
 
 func (s *Service) Password() string {
-	return s.db.Password
+	return s.DB.Password
 }

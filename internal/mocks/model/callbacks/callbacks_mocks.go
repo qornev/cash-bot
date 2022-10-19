@@ -71,16 +71,16 @@ func (m *MockUserManipulator) EXPECT() *MockUserManipulatorMockRecorder {
 	return m.recorder
 }
 
-// Set mocks base method.
-func (m *MockUserManipulator) Set(ctx context.Context, userID int64, code string) error {
+// SetCode mocks base method.
+func (m *MockUserManipulator) SetCode(ctx context.Context, userID int64, code string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Set", ctx, userID, code)
+	ret := m.ctrl.Call(m, "SetCode", ctx, userID, code)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Set indicates an expected call of Set.
-func (mr *MockUserManipulatorMockRecorder) Set(ctx, userID, code interface{}) *gomock.Call {
+// SetCode indicates an expected call of SetCode.
+func (mr *MockUserManipulatorMockRecorder) SetCode(ctx, userID, code interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockUserManipulator)(nil).Set), ctx, userID, code)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCode", reflect.TypeOf((*MockUserManipulator)(nil).SetCode), ctx, userID, code)
 }

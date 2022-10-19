@@ -39,7 +39,7 @@ func main() {
 	rateDB := storage.NewRateDB(db)
 
 	rateClient := rate.New(config)
-	converter := converter.New(rateClient, rateDB)
+	converter := converter.New(rateClient, rateDB, userDB)
 
 	msgModel := messages.New(tgClient, userDB, expenseDB, converter)
 	clbModel := callbacks.New(tgClient, userDB)

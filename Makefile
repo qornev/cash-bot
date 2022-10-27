@@ -21,6 +21,9 @@ run:
 generate: install-mockgen
 	${MOCKGEN} -source=internal/model/messages/incoming_msg.go -destination=internal/mocks/model/messages/messages_mocks.go
 	${MOCKGEN} -source=internal/model/callbacks/incoming_clb.go -destination=internal/mocks/model/callbacks/callbacks_mocks.go
+	${MOCKGEN} -source=internal/storage/storage.go -destination=internal/mocks/storage/storage_db_mocks.go
+	${MOCKGEN} -source=internal/clients/rate/rateclient.go -destination=internal/mocks/clients/rate/rateclients_mocks.go
+	${MOCKGEN} -source=internal/converter/converter.go -destination=internal/mocks/converter/converter_mocks.go
 
 lint: install-lint
 	${LINTBIN} run

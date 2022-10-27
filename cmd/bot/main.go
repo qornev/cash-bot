@@ -30,16 +30,19 @@ func main() {
 		log.Fatal("tg client init failed")
 	}
 
-	storage, err := storage.New()
+	db, err := storage.Connect(config)
 	if err != nil {
-		log.Fatal("storage init failed")
+		log.Fatal("db connection failed")
 	}
+	userDB := storage.NewUserDB(db)
+	expenseDB := storage.NewExpenseDB(db)
+	rateDB := storage.NewRateDB(db)
 
 	rateClient := rate.New(config)
-	converter := converter.New(rateClient)
+	converter := converter.New(rateClient, rateDB, userDB)
 
-	msgModel := messages.New(tgClient, storage, converter)
-	clbModel := callbacks.New(tgClient, storage)
+	msgModel := messages.New(tgClient, userDB, expenseDB, converter)
+	clbModel := callbacks.New(tgClient, userDB)
 
 	wg := sync.WaitGroup{}
 	converter.AutoUpdateRate(ctx, &wg)

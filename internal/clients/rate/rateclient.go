@@ -3,8 +3,10 @@ package rate
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
@@ -35,8 +37,8 @@ func New(configGetter ConfigGetter) *Client {
 	}
 }
 
-func (c *Client) GetUpdate(ctx context.Context) (*converter.Rate, error) {
-	rawJSON, err := c.getRequestRate(ctx)
+func (c *Client) GetUpdate(ctx context.Context, date *int64) (*converter.Rates, error) {
+	rawJSON, err := c.getRequestRate(ctx, date)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't complete get request")
 	}
@@ -46,15 +48,22 @@ func (c *Client) GetUpdate(ctx context.Context) (*converter.Rate, error) {
 		return nil, errors.Wrap(err, "can't complete parse response")
 	}
 
-	rate := changeEURBaseToRUB(responseRate)
+	currentRate := changeEURBaseToRUB(responseRate)
 
-	return rate, nil
+	return currentRate, nil
 }
 
-const url = "https://currency-conversion-and-exchange-rates.p.rapidapi.com/latest"
+const url = "https://currency-conversion-and-exchange-rates.p.rapidapi.com/"
 
-func (c *Client) getRequestRate(ctx context.Context) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func (c *Client) getRequestRate(ctx context.Context, date *int64) ([]byte, error) {
+	var dateString string
+	if date == nil {
+		dateString = "latest"
+	} else {
+		dateString = time.Unix(*date, 0).Format("2006-01-02")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", url, dateString), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "get request exit with error")
 	}
@@ -96,8 +105,8 @@ func parseRates(rawJSON []byte) (*ResponseRate, error) {
 	return &responseRate, nil
 }
 
-func changeEURBaseToRUB(responseRate *ResponseRate) *converter.Rate {
-	return &converter.Rate{
+func changeEURBaseToRUB(responseRate *ResponseRate) *converter.Rates {
+	return &converter.Rates{
 		EUR: responseRate.Rates.RUB,
 		USD: (1.0 / responseRate.Rates.USD) * responseRate.Rates.RUB,
 		CNY: (1.0 / responseRate.Rates.CNY) * responseRate.Rates.RUB,

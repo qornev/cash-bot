@@ -2,6 +2,7 @@ package messages
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 type MessageSender interface {
@@ -18,34 +20,35 @@ type MessageSender interface {
 	SendMessageWithKeyboard(text string, keyboardMarkup string, userID int64) error
 }
 
-type DataManipulator interface {
-	Add(ctx context.Context, userID int64, expense *Expense) error
-	Get(ctx context.Context, userID int64) ([]*Expense, error)
+type ExpenseManipulator interface {
+	Add(ctx context.Context, date int64, userID int64, category string, amount float64) error
+	Get(ctx context.Context, userID int64) ([]domain.Expense, error)
 }
 
-type StateManipulator interface {
-	GetState(ctx context.Context, userID int64) (string, error)
-}
-
-type StorageManipulator interface {
-	DataManipulator
-	StateManipulator
+type UserManipulator interface {
+	GetCode(ctx context.Context, userID int64) (string, error)
+	SetBudget(ctx context.Context, userID int64, budget float64) error
+	GetBudget(ctx context.Context, userID int64) (*float64, string, int64, error)
 }
 
 type Converter interface {
 	Exchange(value float64, from string, to string) (float64, error)
+	UpdateHistoricalRates(date *int64) error
+	GetHistoricalCodeRate(code string, date int64) (float64, error)
 }
 
 type Model struct {
 	tgClient  MessageSender
-	storage   StorageManipulator
+	userDB    UserManipulator
+	expenseDB ExpenseManipulator
 	converter Converter
 }
 
-func New(tgClient MessageSender, storage StorageManipulator, converter Converter) *Model {
+func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, converter Converter) *Model {
 	return &Model{
 		tgClient:  tgClient,
-		storage:   storage,
+		userDB:    userDB,
+		expenseDB: expenseDB,
 		converter: converter,
 	}
 }
@@ -53,12 +56,6 @@ func New(tgClient MessageSender, storage StorageManipulator, converter Converter
 type Message struct {
 	Text   string
 	UserID int64
-}
-
-type Expense struct {
-	Amount   float64
-	Category string
-	Date     int64
 }
 
 const greeting = `Бот для учета расходов
@@ -72,19 +69,26 @@ const greeting = `Бот для учета расходов
 /week - недельный отчет
 /month - месячный отчет
 /year - годовой отчет
-/currency - изменить валюту`
+/currency - изменить валюту
+/set_budget 12.3 - установка лимита на месяц
+/show_budget - вывод текущего лимита`
 
+// Messages routing
 func (s *Model) IncomingMessage(msg Message) error {
-	switch msg.Text {
-	case "/start":
+	switch {
+	case msg.Text == "/start":
 		return s.tgClient.SendMessage(greeting, msg.UserID)
-	case "/week", "/month", "/year":
+	case msg.Text == "/week" || msg.Text == "/month" || msg.Text == "/year":
 		return s.sendReport(msg)
-	case "/currency":
+	case msg.Text == "/currency":
 		return s.tgClient.SendMessageWithKeyboard("Выберите валюту", "currency", msg.UserID)
+	case strings.HasPrefix(msg.Text, "/set_budget"):
+		return s.setBudget(msg)
+	case msg.Text == "/show_budget":
+		return s.getBudget(msg.UserID)
 	default:
 		// If no match with any command - start parse line
-		expense, err := parseLine(msg.Text)
+		expense, err := parseExpense(msg.Text)
 		if err != nil {
 			log.Println(msg.UserID, "expense did not parse")
 		}
@@ -101,6 +105,7 @@ func (s *Model) IncomingMessage(msg Message) error {
 	}
 }
 
+// Send prepared report with expenses to user
 func (s *Model) sendReport(msg Message) error {
 	currentTime := time.Now()
 	var startTime time.Time
@@ -126,13 +131,14 @@ func (s *Model) sendReport(msg Message) error {
 	return s.tgClient.SendMessage("Отчет:\n"+report, msg.UserID)
 }
 
+// Get calculated user sum of expenses from `startTime`
 func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 	list, err := s.getExpenses(msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get expenses")
 	}
 
-	currency, err := s.getCurrencyState(msg.UserID)
+	code, err := s.getCode(msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get current state")
 	}
@@ -140,66 +146,141 @@ func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 	sum := make(map[string]float64)
 	for _, elem := range list {
 		if elem.Date > startTime.Unix() {
+			if code != converter.RUB {
+				rate, err := s.converter.GetHistoricalCodeRate(code, elem.Date)
+				switch {
+				case err == sql.ErrNoRows:
+					if err = s.converter.UpdateHistoricalRates(&elem.Date); err != nil {
+						return "", err
+					}
+
+					rate, err = s.converter.GetHistoricalCodeRate(code, elem.Date)
+					if err != nil {
+						return "", err
+					}
+				case err != nil:
+					return "", err
+				}
+
+				elem.Amount = elem.Amount / rate
+			}
 			sum[elem.Category] += elem.Amount
 		}
 	}
 
 	var report strings.Builder
 	for key, value := range sum {
-		value, err = s.converter.Exchange(value, converter.RUB, currency)
 		if err != nil {
 			return "", errors.Wrap(err, "can't convert value")
 		}
-		fmt.Fprintf(&report, "%s - %.2f %s\n", key, value, currency)
+		fmt.Fprintf(&report, "%s - %.2f %s\n", key, value, code)
 	}
 
 	return report.String(), nil
 }
 
-func (s *Model) addExpense(expense *Expense, msg Message) error {
-	currency, err := s.getCurrencyState(msg.UserID)
+// Add expense to database with converting
+func (s *Model) addExpense(expense *domain.Expense, msg Message) error {
+	code, err := s.getCode(msg.UserID)
 	if err != nil {
-		return errors.Wrap(err, "can't get currency state")
+		return errors.Wrap(err, "can't get code state")
 	}
 
-	value, err := s.converter.Exchange(expense.Amount, currency, converter.RUB)
+	expense.Amount, err = s.converter.Exchange(expense.Amount, code, converter.RUB)
 	if err != nil {
 		return errors.Wrap(err, "can't convert value")
 	}
 
-	expense.Amount = value
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err = s.storage.Add(ctx, msg.UserID, expense)
-	return err
+	return s.expenseDB.Add(ctx, expense.Date, msg.UserID, expense.Category, expense.Amount)
 }
 
-func (s *Model) getExpenses(userID int64) ([]*Expense, error) {
+// Get list of all user expenses
+func (s *Model) getExpenses(userID int64) ([]domain.Expense, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	list, err := s.storage.Get(ctx, userID)
+	list, err := s.expenseDB.Get(ctx, userID)
 	return list, err
 }
 
-func (s *Model) getCurrencyState(userID int64) (string, error) {
+// Get user currency code
+func (s *Model) getCode(userID int64) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	state, err := s.storage.GetState(ctx, userID)
-	return state, err
+	code, err := s.userDB.GetCode(ctx, userID)
+	return code, err
 }
 
-var lineRe = regexp.MustCompile("^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$")
+// Get user month limit (budget)
+func (s *Model) getBudget(userID int64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-var errIncorrectLine = errors.New("Incorrect line")
+	budget, code, _, err := s.userDB.GetBudget(ctx, userID)
+	if err != nil {
+		return errors.Wrap(err, "can't get user budget")
+	}
 
-func parseLine(text string) (*Expense, error) {
-	matches := lineRe.FindStringSubmatch(text)
+	if budget == nil {
+		return s.tgClient.SendMessage("У вас не задан бюджет на месяц", userID)
+	}
+
+	value, err := s.converter.Exchange(*budget, converter.RUB, code)
+	if err != nil {
+		return err
+	}
+
+	return s.tgClient.SendMessage(fmt.Sprintf("Ваш бюджет на месяц: %.2f %s", value, code), userID)
+}
+
+var budgetRe = regexp.MustCompile(`\/set_budget ([0-9.]+[0-9]+$)`)
+
+// Set user budget. Will save it to database
+func (s *Model) setBudget(msg Message) (err error) {
+	matches := budgetRe.FindStringSubmatch(msg.Text)
+	if len(matches) < 2 {
+		return ErrorIncorrectLine
+	}
+
+	budget, err := strconv.ParseFloat(matches[1], 64)
+	if err != nil {
+		return errors.Wrap(err, "can't conv budget to float")
+	}
+
+	code, err := s.getCode(msg.UserID)
+	if err != nil {
+		return errors.Wrap(err, "can't get code state")
+	}
+
+	budget, err = s.converter.Exchange(budget, code, converter.RUB)
+	if err != nil {
+		return errors.Wrap(err, "can't convert value")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err = s.userDB.SetBudget(ctx, msg.UserID, budget)
+	if err != nil {
+		return errors.Wrap(err, "can't set budget")
+	}
+
+	return s.tgClient.SendMessage("Бюджет установлен", msg.UserID)
+}
+
+var expenseRe = regexp.MustCompile(`^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$`)
+
+var ErrorIncorrectLine = errors.New("Incorrect line")
+
+// Parse line with user expense
+func parseExpense(text string) (*domain.Expense, error) {
+	matches := expenseRe.FindStringSubmatch(text)
 	if len(matches) < 4 {
-		return nil, errIncorrectLine
+		return nil, ErrorIncorrectLine
 	}
 
 	amount, err := strconv.ParseFloat(matches[1], 64)
@@ -219,7 +300,7 @@ func parseLine(text string) (*Expense, error) {
 		}
 	}
 
-	return &Expense{
+	return &domain.Expense{
 		Amount:   amount,
 		Category: category,
 		Date:     date.Unix(),

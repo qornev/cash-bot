@@ -12,19 +12,19 @@ type MessageSender interface {
 	SendMessage(text string, userID int64) error
 }
 
-type StateManipulator interface {
-	SetState(ctx context.Context, userID int64, currency string) error
+type UserManipulator interface {
+	SetCode(ctx context.Context, userID int64, code string) error
 }
 
 type Model struct {
 	tgClient MessageSender
-	storage  StateManipulator
+	userDB   UserManipulator
 }
 
-func New(tgClient MessageSender, storage StateManipulator) *Model {
+func New(tgClient MessageSender, userDB UserManipulator) *Model {
 	return &Model{
 		tgClient: tgClient,
-		storage:  storage,
+		userDB:   userDB,
 	}
 }
 
@@ -34,18 +34,21 @@ type Callback struct {
 	Data string
 }
 
+// Callbacks routing
 func (s *Model) IncomingCallback(clb Callback) error {
-	err := s.setCurrencyState(clb.UserID, clb.Data)
+	err := s.setCode(clb.UserID, clb.Data)
 	if err != nil {
-		return errors.Wrap(err, "can't set currency state")
+		return errors.Wrap(err, "can't set code state")
 	}
+
 	return s.tgClient.SendMessage(fmt.Sprintf("Валюта изменена на %s", clb.Data), clb.UserID)
 }
 
-func (s *Model) setCurrencyState(userID int64, currency string) error {
+// Set currency with `code` to user
+func (s *Model) setCode(userID int64, code string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err := s.storage.SetState(ctx, userID, currency)
+	err := s.userDB.SetCode(ctx, userID, code)
 	return err
 }

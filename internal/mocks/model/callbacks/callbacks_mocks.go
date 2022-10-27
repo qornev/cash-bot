@@ -48,39 +48,39 @@ func (mr *MockMessageSenderMockRecorder) SendMessage(text, userID interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockMessageSender)(nil).SendMessage), text, userID)
 }
 
-// MockStateManipulator is a mock of StateManipulator interface.
-type MockStateManipulator struct {
+// MockUserManipulator is a mock of UserManipulator interface.
+type MockUserManipulator struct {
 	ctrl     *gomock.Controller
-	recorder *MockStateManipulatorMockRecorder
+	recorder *MockUserManipulatorMockRecorder
 }
 
-// MockStateManipulatorMockRecorder is the mock recorder for MockStateManipulator.
-type MockStateManipulatorMockRecorder struct {
-	mock *MockStateManipulator
+// MockUserManipulatorMockRecorder is the mock recorder for MockUserManipulator.
+type MockUserManipulatorMockRecorder struct {
+	mock *MockUserManipulator
 }
 
-// NewMockStateManipulator creates a new mock instance.
-func NewMockStateManipulator(ctrl *gomock.Controller) *MockStateManipulator {
-	mock := &MockStateManipulator{ctrl: ctrl}
-	mock.recorder = &MockStateManipulatorMockRecorder{mock}
+// NewMockUserManipulator creates a new mock instance.
+func NewMockUserManipulator(ctrl *gomock.Controller) *MockUserManipulator {
+	mock := &MockUserManipulator{ctrl: ctrl}
+	mock.recorder = &MockUserManipulatorMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStateManipulator) EXPECT() *MockStateManipulatorMockRecorder {
+func (m *MockUserManipulator) EXPECT() *MockUserManipulatorMockRecorder {
 	return m.recorder
 }
 
-// SetState mocks base method.
-func (m *MockStateManipulator) SetState(ctx context.Context, userID int64, currency string) error {
+// SetCode mocks base method.
+func (m *MockUserManipulator) SetCode(ctx context.Context, userID int64, code string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetState", context.Background(), userID, currency)
+	ret := m.ctrl.Call(m, "SetCode", ctx, userID, code)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SetState indicates an expected call of SetState.
-func (mr *MockStateManipulatorMockRecorder) SetState(ctx, userID, currency interface{}) *gomock.Call {
+// SetCode indicates an expected call of SetCode.
+func (mr *MockUserManipulatorMockRecorder) SetCode(ctx, userID, code interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetState", reflect.TypeOf((*MockStateManipulator)(nil).SetState), context.Background(), userID, currency)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCode", reflect.TypeOf((*MockUserManipulator)(nil).SetCode), ctx, userID, code)
 }

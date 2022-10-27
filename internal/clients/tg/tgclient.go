@@ -22,7 +22,6 @@ type Client struct {
 
 func New(tokenGetter TokenGetter) (*Client, error) {
 	client, err := tgbotapi.NewBotAPI(tokenGetter.Token())
-	client.StopReceivingUpdates()
 	if err != nil {
 		return nil, errors.Wrap(err, "NewBotAPI")
 	}

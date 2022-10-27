@@ -1,7 +1,6 @@
 package callbacks
 
 import (
-	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -13,13 +12,13 @@ import (
 func Test_IncomingCallback_ShouldChangeCurrency(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sender := mocks.NewMockMessageSender(ctrl)
-	stater := mocks.NewMockStateManipulator(ctrl)
+	stater := mocks.NewMockUserManipulator(ctrl)
 	model := New(sender, stater)
 
 	var userID int64 = 1234
 
 	sender.EXPECT().SendMessage("Валюта изменена на USD", userID)
-	stater.EXPECT().SetState(context.Background(), userID, converter.USD)
+	stater.EXPECT().SetCode(gomock.Any(), userID, converter.USD)
 
 	err := model.IncomingCallback(Callback{
 		Data:   converter.USD,

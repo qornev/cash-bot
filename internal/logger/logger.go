@@ -1,22 +1,31 @@
 package logger
 
 import (
+	"log"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 var logger *zap.Logger
 
+// Make init for passing tests.
+// Without init() tests fall with SIGSEGV as *zap.Logger is nil.
+// Better do with environment variables.
+func init() {
+	var err error
+	logger, err = zap.NewDevelopment()
+	if err != nil {
+		log.Fatal("cannot init logger")
+	}
+}
+
 func InitLogger(developMode bool) error {
 	var err error
 	if developMode {
 		logger, err = zap.NewDevelopment()
 	} else {
-		cfg := zap.NewProductionConfig()
-		cfg.DisableCaller = true
-		cfg.DisableStacktrace = true
-		cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-		logger, err = cfg.Build()
+		logger, err = zap.NewProduction()
 	}
 
 	if err != nil {

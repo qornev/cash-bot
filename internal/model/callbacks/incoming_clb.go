@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
+	"go.uber.org/zap"
 )
 
 type MessageSender interface {
@@ -38,7 +39,8 @@ type Callback struct {
 func (s *Model) IncomingCallback(clb Callback) error {
 	err := s.setCode(clb.UserID, clb.Data)
 	if err != nil {
-		return errors.Wrap(err, "can't set code state")
+		logger.Error("cannot set code state", zap.Int64("user_id", clb.UserID), zap.Error(err))
+		return s.tgClient.SendMessage("Не удалось изменить валюту", clb.UserID)
 	}
 
 	return s.tgClient.SendMessage(fmt.Sprintf("Валюта изменена на %s", clb.Data), clb.UserID)

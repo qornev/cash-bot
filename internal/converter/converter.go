@@ -3,12 +3,13 @@ package converter
 import (
 	"context"
 	"database/sql"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
+	"go.uber.org/zap"
 )
 
 type RateUpdater interface {
@@ -64,7 +65,7 @@ func (m *Model) AutoUpdateRate(ctx context.Context, wg *sync.WaitGroup) {
 			select {
 			case <-ticker.C:
 				if err := m.UpdateRecentRates(); err != nil {
-					log.Println("error processing rate update:", err)
+					logger.Error("error processing rate update", zap.Error(err))
 				}
 			case <-ctx.Done():
 				return

@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	port        = flag.Int("port", 8080, "the port to listen")
+	//	port        = flag.Int("port", 8080, "the port to listen")
 	developMode = flag.Bool("develop", false, "development mode")
 )
 

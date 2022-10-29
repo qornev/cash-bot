@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
+	"go.uber.org/zap"
 )
 
 type MessageSender interface {
@@ -79,24 +80,41 @@ func (s *Model) IncomingMessage(msg Message) error {
 	case msg.Text == "/start":
 		return s.tgClient.SendMessage(greeting, msg.UserID)
 	case msg.Text == "/week" || msg.Text == "/month" || msg.Text == "/year":
-		return s.sendReport(msg)
+		text, err := s.getReportText(msg)
+		if err != nil {
+			logger.Error("cannot get user report", zap.Int64("user_id", msg.UserID), zap.Error(err))
+			return s.tgClient.SendMessage("Ошибка формирования отчета", msg.UserID)
+		}
+		return s.tgClient.SendMessage(text, msg.UserID)
 	case msg.Text == "/currency":
 		return s.tgClient.SendMessageWithKeyboard("Выберите валюту", "currency", msg.UserID)
 	case strings.HasPrefix(msg.Text, "/set_budget"):
-		return s.setBudget(msg)
+		err := s.setBudget(msg)
+		if err != nil {
+			logger.Error("cannot set user budget", zap.Int64("user_id", msg.UserID), zap.Error(err))
+			return s.tgClient.SendMessage("Не удалось установить бюджет на месяц", msg.UserID)
+		}
+		return s.tgClient.SendMessage("Бюджет на месяц установлен", msg.UserID)
 	case msg.Text == "/show_budget":
-		return s.getBudget(msg.UserID)
+		text, err := s.getBudgetText(msg.UserID)
+		if err != nil {
+			logger.Error("cannot get user budget", zap.Int64("user_id", msg.UserID), zap.Error(err))
+			return s.tgClient.SendMessage("Не удалось получить ваш бюджет на месяц", msg.UserID)
+		}
+		return s.tgClient.SendMessage(text, msg.UserID)
 	default:
 		// If no match with any command - start parse line
 		expense, err := parseExpense(msg.Text)
 		if err != nil {
-			log.Println(msg.UserID, "expense did not parse")
+			// Not `Error` level cause to low importance of this error
+			logger.Info("user expense did not parse", zap.String("user_input", msg.Text), zap.Int64("user_id", msg.UserID))
 		}
 
 		if expense != nil {
 			err := s.addExpense(expense, msg)
 			if err != nil {
-				return errors.Wrap(err, "can't add expense")
+				logger.Error("cannot add user expense", zap.Int64("user_id", msg.UserID), zap.Error(err))
+				return s.tgClient.SendMessage("Не удалось записать трату", msg.UserID)
 			}
 			return s.tgClient.SendMessage("Расход записан:)", msg.UserID)
 		}
@@ -106,7 +124,7 @@ func (s *Model) IncomingMessage(msg Message) error {
 }
 
 // Send prepared report with expenses to user
-func (s *Model) sendReport(msg Message) error {
+func (s *Model) getReportText(msg Message) (string, error) {
 	currentTime := time.Now()
 	var startTime time.Time
 	switch msg.Text {
@@ -119,20 +137,19 @@ func (s *Model) sendReport(msg Message) error {
 	}
 	startTime = time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())
 
-	report, err := s.getReport(startTime, msg)
+	report, err := s.calcReport(startTime, msg)
 	if err != nil {
-		log.Println(msg.UserID, "can't get report")
-		return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
+		return "", errors.Wrap(err, "can't get report")
 	}
 
 	if len(report) == 0 {
-		return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
+		return "Для начала добавьте покупки", nil
 	}
-	return s.tgClient.SendMessage("Отчет:\n"+report, msg.UserID)
+	return "Отчет:\n" + report, nil
 }
 
 // Get calculated user sum of expenses from `startTime`
-func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
+func (s *Model) calcReport(startTime time.Time, msg Message) (string, error) {
 	list, err := s.getExpenses(msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get expenses")
@@ -140,7 +157,7 @@ func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 
 	code, err := s.getCode(msg.UserID)
 	if err != nil {
-		return "", errors.Wrap(err, "can't get current state")
+		return "", errors.Wrap(err, "can't get current code")
 	}
 
 	sum := make(map[string]float64)
@@ -216,25 +233,25 @@ func (s *Model) getCode(userID int64) (string, error) {
 }
 
 // Get user month limit (budget)
-func (s *Model) getBudget(userID int64) error {
+func (s *Model) getBudgetText(userID int64) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	budget, code, _, err := s.userDB.GetBudget(ctx, userID)
 	if err != nil {
-		return errors.Wrap(err, "can't get user budget")
+		return "", errors.Wrap(err, "can't get user budget")
 	}
 
 	if budget == nil {
-		return s.tgClient.SendMessage("У вас не задан бюджет на месяц", userID)
+		return "У вас не задан бюджет на месяц", nil
 	}
 
 	value, err := s.converter.Exchange(*budget, converter.RUB, code)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return s.tgClient.SendMessage(fmt.Sprintf("Ваш бюджет на месяц: %.2f %s", value, code), userID)
+	return fmt.Sprintf("Ваш бюджет на месяц: %.2f %s", value, code), nil
 }
 
 var budgetRe = regexp.MustCompile(`\/set_budget ([0-9.]+[0-9]+$)`)
@@ -269,7 +286,7 @@ func (s *Model) setBudget(msg Message) (err error) {
 		return errors.Wrap(err, "can't set budget")
 	}
 
-	return s.tgClient.SendMessage("Бюджет установлен", msg.UserID)
+	return nil
 }
 
 var expenseRe = regexp.MustCompile(`^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$`)

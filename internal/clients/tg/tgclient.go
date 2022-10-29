@@ -2,14 +2,15 @@ package tg
 
 import (
 	"context"
-	"log"
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
+	"go.uber.org/zap"
 )
 
 type TokenGetter interface {
@@ -74,21 +75,33 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 
 	updates := c.client.GetUpdatesChan(u)
 
-	log.Println("listening for messages")
+	logger.Info("listening for messages...")
 
 	for update := range updates {
 		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+			logger.Info(
+				"processing message",
+				zap.Int64("user_id", update.Message.From.ID),
+				zap.String("user_input", update.Message.Text),
+			)
 
 			err := msgModel.IncomingMessage(messages.Message{
 				Text:   update.Message.Text,
 				UserID: update.Message.From.ID,
 			})
 			if err != nil {
-				log.Println("error processing message:", err)
+				logger.Error(
+					"error processing message",
+					zap.Int64("user_id", update.Message.From.ID),
+					zap.String("user_input", update.Message.Text),
+				)
 			}
 		} else if update.CallbackQuery != nil { // If we got a callback
-			log.Printf("[%s] send callback data %s", update.CallbackQuery.From.UserName, update.CallbackQuery.Data)
+			logger.Info(
+				"processing callback",
+				zap.Int64("user_id", update.CallbackQuery.From.ID),
+				zap.String("user_input", update.CallbackQuery.Data),
+			)
 
 			err := clbModel.IncomingCallback(callbacks.Callback{
 				Data:   update.CallbackQuery.Data,
@@ -96,7 +109,11 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 				// InlineID: update.CallbackQuery.Message.MessageID,
 			})
 			if err != nil {
-				log.Println("error processing callback:", err)
+				logger.Error(
+					"error processing callback",
+					zap.Int64("user_id", update.Message.From.ID),
+					zap.String("user_input", update.Message.Text),
+				)
 			}
 		}
 	}

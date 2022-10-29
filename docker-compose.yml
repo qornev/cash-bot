@@ -15,15 +15,15 @@ services:
     ports:
       - 9090:9090
     volumes:
-      - ./data/metrics/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./data/metrics/alerts.yml:/etc/prometheus/alerts.yml
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./metrics/alerts.yml:/etc/prometheus/alerts.yml
 
   grafana:
     image: grafana/grafana-oss
     ports:
       - 3000:3000
     volumes:
-      - ./data/metrics/grafana:/var/lib/grafana
+      - ./metrics/data:/var/lib/grafana
     links:
       - prometheus
 

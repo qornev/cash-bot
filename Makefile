@@ -53,8 +53,8 @@ install-smartimports: bindir
 		mv ${BINDIR}/smartimports ${SMARTIMPORTS})
 
 docker-run:
-	mkdir -p data/metrics/grafana
-	sudo chmod -R 777 data/metrics/grafana
+	mkdir -p metrics/data
+	sudo chmod -R 777 metrics/data
 	sudo docker compose up
 
 goose-status:

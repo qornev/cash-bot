@@ -82,6 +82,7 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 		if update.Message != nil { // If we got a message
 			messageProcesser := middlewares.NewMessageProcesser(msgModel)
 			messageProcesser = middlewares.LoggingMiddleware(messageProcesser)
+			messageProcesser = middlewares.MetricMiddleware(messageProcesser)
 
 			err := messageProcesser.IncomingMessage(
 				messages.Message{

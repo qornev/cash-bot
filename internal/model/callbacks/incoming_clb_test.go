@@ -17,7 +17,7 @@ func Test_IncomingCallback_ShouldChangeCurrency(t *testing.T) {
 
 	var userID int64 = 1234
 
-	sender.EXPECT().SendMessage("Валюта изменена на USD", userID)
+	sender.EXPECT().SendMessage(gomock.Any(), "Валюта изменена на USD", userID)
 	stater.EXPECT().SetCode(gomock.Any(), userID, converter.USD)
 
 	err := model.IncomingCallback(Callback{

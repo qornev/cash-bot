@@ -21,7 +21,7 @@ func NewServer(port int) *Model {
 			Addr: fmt.Sprintf(":%d", port),
 		},
 	}
-	fmt.Println(model)
+
 	http.Handle("/metrics", promhttp.Handler())
 	return model
 }

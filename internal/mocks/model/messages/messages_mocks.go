@@ -36,31 +36,31 @@ func (m *MockMessageSender) EXPECT() *MockMessageSenderMockRecorder {
 }
 
 // SendMessage mocks base method.
-func (m *MockMessageSender) SendMessage(text string, userID int64) error {
+func (m *MockMessageSender) SendMessage(ctx context.Context, text string, userID int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendMessage", text, userID)
+	ret := m.ctrl.Call(m, "SendMessage", ctx, text, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendMessage indicates an expected call of SendMessage.
-func (mr *MockMessageSenderMockRecorder) SendMessage(text, userID interface{}) *gomock.Call {
+func (mr *MockMessageSenderMockRecorder) SendMessage(ctx, text, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockMessageSender)(nil).SendMessage), text, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockMessageSender)(nil).SendMessage), ctx, text, userID)
 }
 
 // SendMessageWithKeyboard mocks base method.
-func (m *MockMessageSender) SendMessageWithKeyboard(text, keyboardMarkup string, userID int64) error {
+func (m *MockMessageSender) SendMessageWithKeyboard(ctx context.Context, text, keyboardMarkup string, userID int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendMessageWithKeyboard", text, keyboardMarkup, userID)
+	ret := m.ctrl.Call(m, "SendMessageWithKeyboard", ctx, text, keyboardMarkup, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendMessageWithKeyboard indicates an expected call of SendMessageWithKeyboard.
-func (mr *MockMessageSenderMockRecorder) SendMessageWithKeyboard(text, keyboardMarkup, userID interface{}) *gomock.Call {
+func (mr *MockMessageSenderMockRecorder) SendMessageWithKeyboard(ctx, text, keyboardMarkup, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessageWithKeyboard", reflect.TypeOf((*MockMessageSender)(nil).SendMessageWithKeyboard), text, keyboardMarkup, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessageWithKeyboard", reflect.TypeOf((*MockMessageSender)(nil).SendMessageWithKeyboard), ctx, text, keyboardMarkup, userID)
 }
 
 // MockExpenseManipulator is a mock of ExpenseManipulator interface.
@@ -208,45 +208,45 @@ func (m *MockConverter) EXPECT() *MockConverterMockRecorder {
 }
 
 // Exchange mocks base method.
-func (m *MockConverter) Exchange(value float64, from, to string) (float64, error) {
+func (m *MockConverter) Exchange(ctx context.Context, value float64, from, to string) (float64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exchange", value, from, to)
+	ret := m.ctrl.Call(m, "Exchange", ctx, value, from, to)
 	ret0, _ := ret[0].(float64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Exchange indicates an expected call of Exchange.
-func (mr *MockConverterMockRecorder) Exchange(value, from, to interface{}) *gomock.Call {
+func (mr *MockConverterMockRecorder) Exchange(ctx, value, from, to interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockConverter)(nil).Exchange), value, from, to)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockConverter)(nil).Exchange), ctx, value, from, to)
 }
 
 // GetHistoricalCodeRate mocks base method.
-func (m *MockConverter) GetHistoricalCodeRate(code string, date int64) (float64, error) {
+func (m *MockConverter) GetHistoricalCodeRate(ctx context.Context, code string, date int64) (float64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHistoricalCodeRate", code, date)
+	ret := m.ctrl.Call(m, "GetHistoricalCodeRate", ctx, code, date)
 	ret0, _ := ret[0].(float64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetHistoricalCodeRate indicates an expected call of GetHistoricalCodeRate.
-func (mr *MockConverterMockRecorder) GetHistoricalCodeRate(code, date interface{}) *gomock.Call {
+func (mr *MockConverterMockRecorder) GetHistoricalCodeRate(ctx, code, date interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalCodeRate", reflect.TypeOf((*MockConverter)(nil).GetHistoricalCodeRate), code, date)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalCodeRate", reflect.TypeOf((*MockConverter)(nil).GetHistoricalCodeRate), ctx, code, date)
 }
 
 // UpdateHistoricalRates mocks base method.
-func (m *MockConverter) UpdateHistoricalRates(date *int64) error {
+func (m *MockConverter) UpdateHistoricalRates(ctx context.Context, date *int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateHistoricalRates", date)
+	ret := m.ctrl.Call(m, "UpdateHistoricalRates", ctx, date)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateHistoricalRates indicates an expected call of UpdateHistoricalRates.
-func (mr *MockConverterMockRecorder) UpdateHistoricalRates(date interface{}) *gomock.Call {
+func (mr *MockConverterMockRecorder) UpdateHistoricalRates(ctx, date interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateHistoricalRates", reflect.TypeOf((*MockConverter)(nil).UpdateHistoricalRates), date)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateHistoricalRates", reflect.TypeOf((*MockConverter)(nil).UpdateHistoricalRates), ctx, date)
 }

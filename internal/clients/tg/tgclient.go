@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
@@ -33,7 +34,10 @@ func New(tokenGetter TokenGetter) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) SendMessage(text string, userID int64) error {
+func (c *Client) SendMessage(ctx context.Context, text string, userID int64) error {
+	span, _ := opentracing.StartSpanFromContext(ctx, "send message to user")
+	defer span.Finish()
+
 	_, err := c.client.Send(tgbotapi.NewMessage(userID, text))
 	if err != nil {
 		return errors.Wrap(err, "client.Send")
@@ -54,7 +58,10 @@ var currencyKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 
 var MarkupNotExistError = errors.New("keyboard markup not exist")
 
-func (c *Client) SendMessageWithKeyboard(text string, keyboardMarkup string, userID int64) error {
+func (c *Client) SendMessageWithKeyboard(ctx context.Context, text string, keyboardMarkup string, userID int64) error {
+	span, _ := opentracing.StartSpanFromContext(ctx, "send keyboard message to user")
+	defer span.Finish()
+
 	msg := tgbotapi.NewMessage(userID, text)
 	switch keyboardMarkup {
 	case "currency":
@@ -83,6 +90,7 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 			messageProcesser := middlewares.NewMessageProcesser(msgModel)
 			messageProcesser = middlewares.LoggingMiddleware(messageProcesser)
 			messageProcesser = middlewares.MetricMiddleware(messageProcesser)
+			messageProcesser = middlewares.TracingMiddleware(messageProcesser)
 
 			err := messageProcesser.IncomingMessage(
 				messages.Message{

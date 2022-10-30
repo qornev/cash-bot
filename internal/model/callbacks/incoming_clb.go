@@ -10,7 +10,7 @@ import (
 )
 
 type MessageSender interface {
-	SendMessage(text string, userID int64) error
+	SendMessage(ctx context.Context, text string, userID int64) error
 }
 
 type UserManipulator interface {
@@ -37,13 +37,15 @@ type Callback struct {
 
 // Callbacks routing
 func (s *Model) IncomingCallback(clb Callback) error {
+	ctx := context.Background()
+
 	err := s.setCode(clb.UserID, clb.Data)
 	if err != nil {
 		logger.Error("cannot set code state", zap.Int64("user_id", clb.UserID), zap.Error(err))
-		return s.tgClient.SendMessage("Не удалось изменить валюту", clb.UserID)
+		return s.tgClient.SendMessage(ctx, "Не удалось изменить валюту", clb.UserID)
 	}
 
-	return s.tgClient.SendMessage(fmt.Sprintf("Валюта изменена на %s", clb.Data), clb.UserID)
+	return s.tgClient.SendMessage(ctx, fmt.Sprintf("Валюта изменена на %s", clb.Data), clb.UserID)
 }
 
 // Set currency with `code` to user

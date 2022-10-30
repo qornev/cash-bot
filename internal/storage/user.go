@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
@@ -18,6 +19,9 @@ func NewUserDB(db *sql.DB) *UserDB {
 }
 
 func (db *UserDB) UserExist(ctx context.Context, userID int64) (bool, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "check if user exists in db")
+	defer span.Finish()
+
 	const query = `
 		select 
 			id 
@@ -88,6 +92,9 @@ func (db *UserDB) AddCode(ctx context.Context, userID int64, code string) error 
 }
 
 func (db *UserDB) GetCode(ctx context.Context, userID int64) (string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get user code from db")
+	defer span.Finish()
+
 	const query = `
 		select
 			code
@@ -110,6 +117,9 @@ func (db *UserDB) GetCode(ctx context.Context, userID int64) (string, error) {
 }
 
 func (db *UserDB) SetBudget(ctx context.Context, userID int64, budget float64) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "set user budget in db")
+	defer span.Finish()
+
 	isUserExist, err := db.UserExist(ctx, userID)
 	if err != nil {
 		return err
@@ -122,6 +132,9 @@ func (db *UserDB) SetBudget(ctx context.Context, userID int64, budget float64) e
 }
 
 func (db *UserDB) UpdateBudget(ctx context.Context, userID int64, budget float64) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "update user budget in db")
+	defer span.Finish()
+
 	const query = `
 		update users 
 		set 
@@ -140,6 +153,9 @@ func (db *UserDB) UpdateBudget(ctx context.Context, userID int64, budget float64
 }
 
 func (db *UserDB) AddBudget(ctx context.Context, userID int64, budget float64) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "add user budget in db")
+	defer span.Finish()
+
 	const query = `
 		insert into users(
 			id, 
@@ -188,6 +204,9 @@ func (db *UserDB) GetBudget(ctx context.Context, userID int64) (*float64, string
 }
 
 func (db *UserDB) GetAllUsers(ctx context.Context) ([]domain.User, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get all users from db")
+	defer span.Finish()
+
 	const query = `
 		select 
 			id,

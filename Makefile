@@ -15,8 +15,11 @@ build: bindir
 test:
 	go test -count=1 ./...
 
-run:
+prod:
 	go run ${PACKAGE}
+
+dev:
+	go run ${PACKAGE} -develop
 
 generate: install-mockgen
 	${MOCKGEN} -source=internal/model/messages/incoming_msg.go -destination=internal/mocks/model/messages/messages_mocks.go

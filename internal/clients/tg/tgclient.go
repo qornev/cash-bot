@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/middlewares"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
 	"go.uber.org/zap"
@@ -71,7 +72,7 @@ func (c *Client) SendMessageWithKeyboard(text string, keyboardMarkup string, use
 
 func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Model) {
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = 5 // set timeout for 5s for fast graceful end. prev value 60
 
 	updates := c.client.GetUpdatesChan(u)
 
@@ -79,16 +80,18 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 
 	for update := range updates {
 		if update.Message != nil { // If we got a message
-			logger.Info(
-				"processing message",
-				zap.Int64("user_id", update.Message.From.ID),
-				zap.String("user_input", update.Message.Text),
-			)
+			messageProcesser := middlewares.NewMessageProcesser(msgModel)
+			messageProcesser = middlewares.LoggingMiddleware(messageProcesser)
 
-			err := msgModel.IncomingMessage(messages.Message{
-				Text:   update.Message.Text,
-				UserID: update.Message.From.ID,
-			})
+			err := messageProcesser.IncomingMessage(
+				messages.Message{
+					Text:   update.Message.Text,
+					UserID: update.Message.From.ID,
+				},
+				&messages.CommandInfo{
+					Command: messages.Unknown,
+				},
+			)
 			if err != nil {
 				logger.Error(
 					"error processing message",
@@ -117,6 +120,8 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 			}
 		}
 	}
+
+	logger.Info("end processing messages...")
 }
 
 func (c *Client) AutoListenUpdates(ctx context.Context, wg *sync.WaitGroup, msgModel *messages.Model, clbModel *callbacks.Model) {

@@ -22,11 +22,19 @@ func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 
 	sender.EXPECT().SendMessage("Неизвестная команда:(", int64(123))
 
-	err := model.IncomingMessage(Message{
-		Text:   "some text",
-		UserID: 123,
-	})
+	info := CommandInfo{
+		Command: Unknown,
+	}
 
+	err := model.IncomingMessage(
+		Message{
+			Text:   "some text",
+			UserID: 123,
+		},
+		&info,
+	)
+
+	assert.Equal(t, Unknown, info.Command)
 	assert.NoError(t, err)
 }
 
@@ -37,11 +45,19 @@ func Test_OnCurrencyCommand_ShouldAnswerWithKeyboardMessage(t *testing.T) {
 
 	sender.EXPECT().SendMessageWithKeyboard("Выберите валюту", "currency", int64(1234))
 
-	err := model.IncomingMessage(Message{
-		Text:   "/currency",
-		UserID: int64(1234),
-	})
+	info := CommandInfo{
+		Command: Unknown,
+	}
 
+	err := model.IncomingMessage(
+		Message{
+			Text:   "/currency",
+			UserID: int64(1234),
+		},
+		&info,
+	)
+
+	assert.Equal(t, GetCurrency, info.Command)
 	assert.NoError(t, err)
 }
 
@@ -107,9 +123,17 @@ func Test_onAddExpense_ShouldListExpense(t *testing.T) {
 	expenseDB.EXPECT().Add(gomock.Any(), date.Unix(), userID, category, amount)
 	sender.EXPECT().SendMessage("Расход записан:)", userID)
 
-	err := model.IncomingMessage(Message{
-		Text:   fmt.Sprintf("%.2f %s %s", amount, category, dateString),
-		UserID: userID,
-	})
+	info := CommandInfo{
+		Command: Unknown,
+	}
+	err := model.IncomingMessage(
+		Message{
+			Text:   fmt.Sprintf("%.2f %s %s", amount, category, dateString),
+			UserID: userID,
+		},
+		&info,
+	)
+
+	assert.Equal(t, AddExpense, info.Command)
 	assert.NoError(t, err)
 }

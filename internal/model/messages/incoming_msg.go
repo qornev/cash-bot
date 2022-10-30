@@ -59,6 +59,10 @@ type Message struct {
 	UserID int64
 }
 
+type CommandInfo struct {
+	Command string
+}
+
 const greeting = `Бот для учета расходов
 
 Добавить трату: <сумма> <категория> <дата*>
@@ -75,11 +79,13 @@ const greeting = `Бот для учета расходов
 /show_budget - вывод текущего лимита`
 
 // Messages routing
-func (s *Model) IncomingMessage(msg Message) error {
+func (s *Model) IncomingMessage(msg Message, info *CommandInfo) error {
 	switch {
 	case msg.Text == "/start":
+		info.Command = Start
 		return s.tgClient.SendMessage(greeting, msg.UserID)
 	case msg.Text == "/week" || msg.Text == "/month" || msg.Text == "/year":
+		info.Command = commandReportText(msg.Text)
 		text, err := s.getReportText(msg)
 		if err != nil {
 			logger.Error("cannot get user report", zap.Int64("user_id", msg.UserID), zap.Error(err))
@@ -87,8 +93,10 @@ func (s *Model) IncomingMessage(msg Message) error {
 		}
 		return s.tgClient.SendMessage(text, msg.UserID)
 	case msg.Text == "/currency":
+		info.Command = GetCurrency
 		return s.tgClient.SendMessageWithKeyboard("Выберите валюту", "currency", msg.UserID)
 	case strings.HasPrefix(msg.Text, "/set_budget"):
+		info.Command = SetBudget
 		err := s.setBudget(msg)
 		if err != nil {
 			logger.Error("cannot set user budget", zap.Int64("user_id", msg.UserID), zap.Error(err))
@@ -96,6 +104,7 @@ func (s *Model) IncomingMessage(msg Message) error {
 		}
 		return s.tgClient.SendMessage("Бюджет на месяц установлен", msg.UserID)
 	case msg.Text == "/show_budget":
+		info.Command = ShowBudget
 		text, err := s.getBudgetText(msg.UserID)
 		if err != nil {
 			logger.Error("cannot get user budget", zap.Int64("user_id", msg.UserID), zap.Error(err))
@@ -111,6 +120,7 @@ func (s *Model) IncomingMessage(msg Message) error {
 		}
 
 		if expense != nil {
+			info.Command = AddExpense
 			err := s.addExpense(expense, msg)
 			if err != nil {
 				logger.Error("cannot add user expense", zap.Int64("user_id", msg.UserID), zap.Error(err))
@@ -119,6 +129,7 @@ func (s *Model) IncomingMessage(msg Message) error {
 			return s.tgClient.SendMessage("Расход записан:)", msg.UserID)
 		}
 
+		info.Command = Unknown
 		return s.tgClient.SendMessage("Неизвестная команда:(", msg.UserID)
 	}
 }

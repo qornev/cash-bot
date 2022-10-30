@@ -15,12 +15,13 @@ import (
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/server"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/storage"
 	"go.uber.org/zap"
 )
 
 var (
-	//	port        = flag.Int("port", 8080, "the port to listen")
+	port        = flag.Int("port", 8080, "the port to listen")
 	developMode = flag.Bool("develop", false, "development mode")
 )
 
@@ -59,9 +60,12 @@ func main() {
 	msgModel := messages.New(tgClient, userDB, expenseDB, converter)
 	clbModel := callbacks.New(tgClient, userDB)
 
+	srv := server.NewServer(*port)
+
 	wg := sync.WaitGroup{}
 	converter.AutoUpdateRate(ctx, &wg)
 	tgClient.AutoListenUpdates(ctx, &wg, msgModel, clbModel)
+	srv.Start(ctx, &wg)
 
 	<-ctx.Done()
 	wg.Wait()

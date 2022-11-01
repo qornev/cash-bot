@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 create table users
 (
-    id     integer primary key,
+    id         integer primary key,
     code       text    not null,
     budget     real,
     updated_at integer not null

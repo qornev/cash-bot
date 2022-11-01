@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
+	"go.uber.org/zap"
 )
 
 type MessageSender interface {
-	SendMessage(text string, userID int64) error
+	SendMessage(ctx context.Context, text string, userID int64) error
 }
 
 type UserManipulator interface {
@@ -36,12 +37,15 @@ type Callback struct {
 
 // Callbacks routing
 func (s *Model) IncomingCallback(clb Callback) error {
+	ctx := context.Background()
+
 	err := s.setCode(clb.UserID, clb.Data)
 	if err != nil {
-		return errors.Wrap(err, "can't set code state")
+		logger.Error("cannot set code state", zap.Int64("user_id", clb.UserID), zap.Error(err))
+		return s.tgClient.SendMessage(ctx, "Не удалось изменить валюту", clb.UserID)
 	}
 
-	return s.tgClient.SendMessage(fmt.Sprintf("Валюта изменена на %s", clb.Data), clb.UserID)
+	return s.tgClient.SendMessage(ctx, fmt.Sprintf("Валюта изменена на %s", clb.Data), clb.UserID)
 }
 
 // Set currency with `code` to user

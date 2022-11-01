@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/opentracing/opentracing-go"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 )
 
@@ -16,6 +17,9 @@ func NewRateDB(db *sql.DB) *RateDB {
 }
 
 func (db *RateDB) Add(ctx context.Context, date int64, code string, nominal float64) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "add rate to db")
+	defer span.Finish()
+
 	const query = `
 		insert into rates(
 			dt, 
@@ -36,6 +40,9 @@ func (db *RateDB) Add(ctx context.Context, date int64, code string, nominal floa
 
 // Get `code` rate at `date` time
 func (db *RateDB) Get(ctx context.Context, date int64, code string) (*converter.Rate, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get rate from db")
+	defer span.Finish()
+
 	const query = `
 		select 
 			code, 

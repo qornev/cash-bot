@@ -15,8 +15,11 @@ build: bindir
 test:
 	go test -count=1 ./...
 
-run:
+prod:
 	go run ${PACKAGE}
+
+dev:
+	go run ${PACKAGE} -develop
 
 generate: install-mockgen
 	${MOCKGEN} -source=internal/model/messages/incoming_msg.go -destination=internal/mocks/model/messages/messages_mocks.go
@@ -53,4 +56,15 @@ install-smartimports: bindir
 		mv ${BINDIR}/smartimports ${SMARTIMPORTS})
 
 docker-run:
+	mkdir -p metrics/data
+	sudo chmod -R 777 metrics/data
 	sudo docker compose up
+
+goose-status:
+	goose -dir migrations  postgres "user=postgres password=pass dbname=postgres host=127.0.0.1 port=5432 sslmode=disable" status
+
+goose-up:
+	goose -dir migrations  postgres "user=postgres password=pass dbname=postgres host=127.0.0.1 port=5432 sslmode=disable" up
+
+goose-reset:
+	goose -dir migrations  postgres "user=postgres password=pass dbname=postgres host=127.0.0.1 port=5432 sslmode=disable" reset

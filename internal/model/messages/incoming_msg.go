@@ -4,20 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 type MessageSender interface {
-	SendMessage(text string, userID int64) error
-	SendMessageWithKeyboard(text string, keyboardMarkup string, userID int64) error
+	SendMessage(ctx context.Context, text string, userID int64) error
+	SendMessageWithKeyboard(ctx context.Context, text string, keyboardMarkup string, userID int64) error
 }
 
 type ExpenseManipulator interface {
@@ -32,9 +32,9 @@ type UserManipulator interface {
 }
 
 type Converter interface {
-	Exchange(value float64, from string, to string) (float64, error)
-	UpdateHistoricalRates(date *int64) error
-	GetHistoricalCodeRate(code string, date int64) (float64, error)
+	Exchange(ctx context.Context, value float64, from string, to string) (float64, error)
+	UpdateHistoricalRates(ctx context.Context, date *int64) error
+	GetHistoricalCodeRate(ctx context.Context, code string, date int64) (float64, error)
 }
 
 type Model struct {
@@ -58,55 +58,34 @@ type Message struct {
 	UserID int64
 }
 
-const greeting = `Бот для учета расходов
+type CommandInfo struct {
+	Command string
+	ctx     context.Context
+}
 
-Добавить трату: <сумма> <категория> <дата*>
-* - необязательный параметр
-Пример: 499.99 интернет 2022-01-01
-
-Команды:
-/start - запуск бота и инструкция
-/week - недельный отчет
-/month - месячный отчет
-/year - годовой отчет
-/currency - изменить валюту
-/set_budget 12.3 - установка лимита на месяц
-/show_budget - вывод текущего лимита`
-
-// Messages routing
-func (s *Model) IncomingMessage(msg Message) error {
-	switch {
-	case msg.Text == "/start":
-		return s.tgClient.SendMessage(greeting, msg.UserID)
-	case msg.Text == "/week" || msg.Text == "/month" || msg.Text == "/year":
-		return s.sendReport(msg)
-	case msg.Text == "/currency":
-		return s.tgClient.SendMessageWithKeyboard("Выберите валюту", "currency", msg.UserID)
-	case strings.HasPrefix(msg.Text, "/set_budget"):
-		return s.setBudget(msg)
-	case msg.Text == "/show_budget":
-		return s.getBudget(msg.UserID)
-	default:
-		// If no match with any command - start parse line
-		expense, err := parseExpense(msg.Text)
-		if err != nil {
-			log.Println(msg.UserID, "expense did not parse")
-		}
-
-		if expense != nil {
-			err := s.addExpense(expense, msg)
-			if err != nil {
-				return errors.Wrap(err, "can't add expense")
-			}
-			return s.tgClient.SendMessage("Расход записан:)", msg.UserID)
-		}
-
-		return s.tgClient.SendMessage("Неизвестная команда:(", msg.UserID)
+func (c *CommandInfo) Context() context.Context {
+	if c.ctx != nil {
+		return c.ctx
 	}
+	return context.Background()
+}
+
+func (c *CommandInfo) WithContext(ctx context.Context) *CommandInfo {
+	if ctx == nil {
+		panic("nil context")
+	}
+	c2 := new(CommandInfo)
+	*c2 = *c
+	c2.ctx = ctx
+	return c2
 }
 
 // Send prepared report with expenses to user
-func (s *Model) sendReport(msg Message) error {
+func (s *Model) getReportText(ctx context.Context, msg Message) (string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get report text")
+	span.SetTag("command", commandReportText(msg.Text))
+	defer span.Finish()
+
 	currentTime := time.Now()
 	var startTime time.Time
 	switch msg.Text {
@@ -119,42 +98,44 @@ func (s *Model) sendReport(msg Message) error {
 	}
 	startTime = time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())
 
-	report, err := s.getReport(startTime, msg)
+	report, err := s.calcReport(ctx, startTime, msg)
 	if err != nil {
-		log.Println(msg.UserID, "can't get report")
-		return s.tgClient.SendMessage("Ошибка вывода отчета", msg.UserID)
+		return "", errors.Wrap(err, "can't get report")
 	}
 
 	if len(report) == 0 {
-		return s.tgClient.SendMessage("Для начала добавьте покупки", msg.UserID)
+		return "Для начала добавьте покупки", nil
 	}
-	return s.tgClient.SendMessage("Отчет:\n"+report, msg.UserID)
+	return "Отчет:\n" + report, nil
 }
 
 // Get calculated user sum of expenses from `startTime`
-func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
-	list, err := s.getExpenses(msg.UserID)
+func (s *Model) calcReport(ctx context.Context, startTime time.Time, msg Message) (string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "calc report")
+	span.Finish()
+
+	list, err := s.getExpenses(ctx, msg.UserID)
 	if err != nil {
 		return "", errors.Wrap(err, "can't get expenses")
 	}
 
-	code, err := s.getCode(msg.UserID)
+	code, err := s.getCode(ctx, msg.UserID)
 	if err != nil {
-		return "", errors.Wrap(err, "can't get current state")
+		return "", errors.Wrap(err, "can't get current code")
 	}
 
 	sum := make(map[string]float64)
 	for _, elem := range list {
 		if elem.Date > startTime.Unix() {
 			if code != converter.RUB {
-				rate, err := s.converter.GetHistoricalCodeRate(code, elem.Date)
+				rate, err := s.converter.GetHistoricalCodeRate(ctx, code, elem.Date)
 				switch {
 				case err == sql.ErrNoRows:
-					if err = s.converter.UpdateHistoricalRates(&elem.Date); err != nil {
+					if err = s.converter.UpdateHistoricalRates(ctx, &elem.Date); err != nil {
 						return "", err
 					}
 
-					rate, err = s.converter.GetHistoricalCodeRate(code, elem.Date)
+					rate, err = s.converter.GetHistoricalCodeRate(ctx, code, elem.Date)
 					if err != nil {
 						return "", err
 					}
@@ -180,26 +161,33 @@ func (s *Model) getReport(startTime time.Time, msg Message) (string, error) {
 }
 
 // Add expense to database with converting
-func (s *Model) addExpense(expense *domain.Expense, msg Message) error {
-	code, err := s.getCode(msg.UserID)
+func (s *Model) addExpense(ctx context.Context, expense *domain.Expense, msg Message) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "add expense")
+	span.SetTag("command", AddExpense)
+	defer span.Finish()
+
+	code, err := s.getCode(ctx, msg.UserID)
 	if err != nil {
 		return errors.Wrap(err, "can't get code state")
 	}
 
-	expense.Amount, err = s.converter.Exchange(expense.Amount, code, converter.RUB)
+	expense.Amount, err = s.converter.Exchange(ctx, expense.Amount, code, converter.RUB)
 	if err != nil {
 		return errors.Wrap(err, "can't convert value")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	return s.expenseDB.Add(ctx, expense.Date, msg.UserID, expense.Category, expense.Amount)
 }
 
 // Get list of all user expenses
-func (s *Model) getExpenses(userID int64) ([]domain.Expense, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+func (s *Model) getExpenses(ctx context.Context, userID int64) ([]domain.Expense, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get expenses")
+	defer span.Finish()
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	list, err := s.expenseDB.Get(ctx, userID)
@@ -207,8 +195,11 @@ func (s *Model) getExpenses(userID int64) ([]domain.Expense, error) {
 }
 
 // Get user currency code
-func (s *Model) getCode(userID int64) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+func (s *Model) getCode(ctx context.Context, userID int64) (string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get code")
+	defer span.Finish()
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	code, err := s.userDB.GetCode(ctx, userID)
@@ -216,31 +207,39 @@ func (s *Model) getCode(userID int64) (string, error) {
 }
 
 // Get user month limit (budget)
-func (s *Model) getBudget(userID int64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+func (s *Model) getBudgetText(ctx context.Context, userID int64) (string, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get budget text")
+	span.SetTag("command", ShowBudget)
+	defer span.Finish()
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	budget, code, _, err := s.userDB.GetBudget(ctx, userID)
 	if err != nil {
-		return errors.Wrap(err, "can't get user budget")
+		return "", errors.Wrap(err, "can't get user budget")
 	}
 
 	if budget == nil {
-		return s.tgClient.SendMessage("У вас не задан бюджет на месяц", userID)
+		return "У вас не задан бюджет на месяц", nil
 	}
 
-	value, err := s.converter.Exchange(*budget, converter.RUB, code)
+	value, err := s.converter.Exchange(ctx, *budget, converter.RUB, code)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return s.tgClient.SendMessage(fmt.Sprintf("Ваш бюджет на месяц: %.2f %s", value, code), userID)
+	return fmt.Sprintf("Ваш бюджет на месяц: %.2f %s", value, code), nil
 }
 
 var budgetRe = regexp.MustCompile(`\/set_budget ([0-9.]+[0-9]+$)`)
 
 // Set user budget. Will save it to database
-func (s *Model) setBudget(msg Message) (err error) {
+func (s *Model) setBudget(ctx context.Context, msg Message) (err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "set budget")
+	span.SetTag("command", SetBudget)
+	defer span.Finish()
+
 	matches := budgetRe.FindStringSubmatch(msg.Text)
 	if len(matches) < 2 {
 		return ErrorIncorrectLine
@@ -251,17 +250,17 @@ func (s *Model) setBudget(msg Message) (err error) {
 		return errors.Wrap(err, "can't conv budget to float")
 	}
 
-	code, err := s.getCode(msg.UserID)
+	code, err := s.getCode(ctx, msg.UserID)
 	if err != nil {
 		return errors.Wrap(err, "can't get code state")
 	}
 
-	budget, err = s.converter.Exchange(budget, code, converter.RUB)
+	budget, err = s.converter.Exchange(ctx, budget, code, converter.RUB)
 	if err != nil {
 		return errors.Wrap(err, "can't convert value")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	err = s.userDB.SetBudget(ctx, msg.UserID, budget)
@@ -269,7 +268,7 @@ func (s *Model) setBudget(msg Message) (err error) {
 		return errors.Wrap(err, "can't set budget")
 	}
 
-	return s.tgClient.SendMessage("Бюджет установлен", msg.UserID)
+	return nil
 }
 
 var expenseRe = regexp.MustCompile(`^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-[0-9]{2}-[0-9]{2})?$`)
@@ -277,7 +276,10 @@ var expenseRe = regexp.MustCompile(`^([0-9.]+) ([а-яА-Яa-zA-Z]+) ?([0-9]{4}-
 var ErrorIncorrectLine = errors.New("Incorrect line")
 
 // Parse line with user expense
-func parseExpense(text string) (*domain.Expense, error) {
+func parseExpense(ctx context.Context, text string) (*domain.Expense, error) {
+	span, _ := opentracing.StartSpanFromContext(ctx, "parse user text")
+	defer span.Finish()
+
 	matches := expenseRe.FindStringSubmatch(text)
 	if len(matches) < 4 {
 		return nil, ErrorIncorrectLine

@@ -1,5 +1,18 @@
 -- +goose Up
 -- +goose StatementBegin
+insert into users(id, code, updated_at)
+values (1234, 'RUB', 1666186334);
+insert into users(id, code, updated_at)
+values (4321, 'RUB', 1666186334);
+insert into users(id, code, updated_at)
+values (102938, 'RUB', 1666186334);
+insert into users(id, code, updated_at)
+values (47389, 'RUB', 1666186334);
+insert into users(id, code, updated_at)
+values (213900, 'RUB', 1666186334);
+insert into users(id, code, updated_at)
+values (3452, 'RUB', 1666186334);
+
 insert into expenses(dt, user_id, amount, category)
 values (1666186334, 1234, 123.45, 'еда');
 insert into expenses(dt, user_id, amount, category)

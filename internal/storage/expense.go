@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
@@ -23,6 +24,9 @@ var ErrorOverBudget = errors.New("Going over budget")
 // If month sum of expenses will be more than a budget, so transaction will rollback.
 // If not more - commit.
 func (db *ExpenseDB) Add(ctx context.Context, date int64, userID int64, category string, amount float64) (err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "add user expense to db")
+	defer span.Finish()
+
 	tx, err := db.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -98,6 +102,9 @@ func (db *ExpenseDB) Add(ctx context.Context, date int64, userID int64, category
 
 // Return array with `userID` expenses
 func (db *ExpenseDB) Get(ctx context.Context, userID int64) ([]domain.Expense, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get user expenses from db")
+	defer span.Finish()
+
 	const query = `
 		select
 			dt, 

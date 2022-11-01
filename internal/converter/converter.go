@@ -3,12 +3,14 @@ package converter
 import (
 	"context"
 	"database/sql"
-	"log"
 	"sync"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
+	"go.uber.org/zap"
 )
 
 type RateUpdater interface {
@@ -63,8 +65,8 @@ func (m *Model) AutoUpdateRate(ctx context.Context, wg *sync.WaitGroup) {
 		for {
 			select {
 			case <-ticker.C:
-				if err := m.UpdateRecentRates(); err != nil {
-					log.Println("error processing rate update:", err)
+				if err := m.UpdateRecentRates(ctx); err != nil {
+					logger.Error("error processing rate update", zap.Error(err))
 				}
 			case <-ctx.Done():
 				return
@@ -74,8 +76,11 @@ func (m *Model) AutoUpdateRate(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Get actual rates update from API
-func (m *Model) UpdateRecentRates() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+func (m *Model) UpdateRecentRates(ctx context.Context) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "update recent rates")
+	defer span.Finish()
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	rates, err := m.rateClient.GetUpdate(ctx, nil)
@@ -91,8 +96,11 @@ func (m *Model) UpdateRecentRates() error {
 }
 
 // Get rates update from API at specified `date`
-func (m *Model) UpdateHistoricalRates(date *int64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+func (m *Model) UpdateHistoricalRates(ctx context.Context, date *int64) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "update historical rates")
+	defer span.Finish()
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	rates, err := m.rateClient.GetUpdate(ctx, date)
@@ -109,6 +117,9 @@ func (m *Model) UpdateHistoricalRates(date *int64) error {
 
 // Set rates in cache, also with add to database and updating budgets with not RUB currencies
 func (m *Model) setCurrentRates(ctx context.Context, rates *Rates) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "set current rates")
+	defer span.Finish()
+
 	if err := m.addRates(ctx, rates, nil); err != nil {
 		return err
 	}
@@ -123,14 +134,14 @@ func (m *Model) setCurrentRates(ctx context.Context, rates *Rates) error {
 			continue
 		}
 
-		rate, err := m.GetHistoricalCodeRate(user.Code, user.Updated)
+		rate, err := m.GetHistoricalCodeRate(ctx, user.Code, user.Updated)
 		switch {
 		case err == sql.ErrNoRows:
-			if err = m.UpdateHistoricalRates(&user.Updated); err != nil {
+			if err = m.UpdateHistoricalRates(ctx, &user.Updated); err != nil {
 				return err
 			}
 
-			rate, err = m.GetHistoricalCodeRate(user.Code, user.Updated)
+			rate, err = m.GetHistoricalCodeRate(ctx, user.Code, user.Updated)
 			if err != nil {
 				return err
 			}
@@ -161,6 +172,9 @@ func (m *Model) setCurrentRates(ctx context.Context, rates *Rates) error {
 
 // Add rates to database
 func (m *Model) addRates(ctx context.Context, rates *Rates, date *int64) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "add rates")
+	defer span.Finish()
+
 	if date == nil {
 		currentDate := time.Now().Unix()
 		date = &currentDate
@@ -185,9 +199,13 @@ func (m *Model) GetCurrentRates() Rates {
 var CodeNotExistError = errors.New("code not exist")
 
 // Get currency rate with `code` from cache
-func (m *Model) getCurrentCodeRate(code string) (float64, error) {
+func (m *Model) getCurrentCodeRate(ctx context.Context, code string) (float64, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get current rate for code")
+	span.SetTag("code", code)
+	defer span.Finish()
+
 	if m.currentRates == nil {
-		if err := m.UpdateRecentRates(); err != nil {
+		if err := m.UpdateRecentRates(ctx); err != nil {
 			return 0.0, errors.Wrap(err, "can't update rate")
 		}
 	}
@@ -207,8 +225,12 @@ func (m *Model) getCurrentCodeRate(code string) (float64, error) {
 }
 
 // Get currency rate with `code` from database
-func (m *Model) GetHistoricalCodeRate(code string, date int64) (float64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+func (m *Model) GetHistoricalCodeRate(ctx context.Context, code string, date int64) (float64, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get historical rate for code")
+	span.SetTag("code", code)
+	defer span.Finish()
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	rate, err := m.rateDB.Get(ctx, date, code)
@@ -220,13 +242,16 @@ func (m *Model) GetHistoricalCodeRate(code string, date int64) (float64, error) 
 }
 
 // Exchage money with rates from cache. If no rates in cache, method will request it
-func (m *Model) Exchange(amount float64, from string, to string) (float64, error) {
-	fromRate, err := m.getCurrentCodeRate(from)
+func (m *Model) Exchange(ctx context.Context, amount float64, from string, to string) (float64, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "exchange money")
+	defer span.Finish()
+
+	fromRate, err := m.getCurrentCodeRate(ctx, from)
 	if err != nil {
 		return fromRate, errors.Wrap(err, "can't get from value in exchage")
 	}
 
-	toRate, err := m.getCurrentCodeRate(to)
+	toRate, err := m.getCurrentCodeRate(ctx, to)
 	if err != nil {
 		return toRate, errors.Wrap(err, "can't get to value in exchange")
 	}

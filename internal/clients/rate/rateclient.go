@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 )
@@ -38,6 +39,9 @@ func New(configGetter ConfigGetter) *Client {
 }
 
 func (c *Client) GetUpdate(ctx context.Context, date *int64) (*converter.Rates, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get rate update")
+	defer span.Finish()
+
 	rawJSON, err := c.getRequestRate(ctx, date)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't complete get request")
@@ -56,6 +60,9 @@ func (c *Client) GetUpdate(ctx context.Context, date *int64) (*converter.Rates, 
 const url = "https://currency-conversion-and-exchange-rates.p.rapidapi.com/"
 
 func (c *Client) getRequestRate(ctx context.Context, date *int64) ([]byte, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "get request rate")
+	defer span.Finish()
+
 	var dateString string
 	if date == nil {
 		dateString = "latest"

@@ -3,5 +3,6 @@
 /.idea
 /data
 /.postgres-data
+/.redis-data
 /db.session.sql
 /metrics/data

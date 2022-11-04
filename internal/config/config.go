@@ -25,10 +25,18 @@ type DatabaseConfig struct {
 	Password string `yaml:"password"`
 }
 
+type CacheConfig struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
 type Service struct {
-	Tg   TelegramConfig `yaml:"telegram"`
-	Rate RateConfig     `yaml:"rateApi"`
-	DB   DatabaseConfig `yaml:"database"`
+	Tg    TelegramConfig `yaml:"telegram"`
+	Rate  RateConfig     `yaml:"rateApi"`
+	DB    DatabaseConfig `yaml:"database"`
+	Cache CacheConfig    `yaml:"cache"`
 }
 
 func New() (*Service, error) {
@@ -53,17 +61,17 @@ func NewFromFile(filePath string) (*Service, error) {
 
 // TELEGRAM
 
-func (s *Service) Token() string {
+func (s *Service) TokenTG() string {
 	return s.Tg.Token
 }
 
 // RATE API
 
-func (s *Service) Key() string {
+func (s *Service) KeyRateAPI() string {
 	return s.Rate.Key
 }
 
-func (s *Service) Host() string {
+func (s *Service) HostRateAPI() string {
 	return s.Rate.Host
 }
 
@@ -73,14 +81,32 @@ func (s *Service) HostDB() string {
 	return s.DB.Host
 }
 
-func (s *Service) Port() int {
+func (s *Service) PortDB() int {
 	return s.DB.Port
 }
 
-func (s *Service) Username() string {
+func (s *Service) UsernameDB() string {
 	return s.DB.Username
 }
 
-func (s *Service) Password() string {
+func (s *Service) PasswordDB() string {
 	return s.DB.Password
+}
+
+// CACHE
+
+func (s *Service) HostCache() string {
+	return s.Cache.Host
+}
+
+func (s *Service) PortCache() int {
+	return s.Cache.Port
+}
+
+func (s *Service) UsernameCache() string {
+	return s.Cache.Username
+}
+
+func (s *Service) PasswordCache() string {
+	return s.Cache.Password
 }

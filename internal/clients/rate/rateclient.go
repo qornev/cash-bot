@@ -14,8 +14,8 @@ import (
 )
 
 type ConfigGetter interface {
-	Key() string
-	Host() string
+	KeyRateAPI() string
+	HostRateAPI() string
 }
 
 type Params struct {
@@ -32,8 +32,8 @@ func New(configGetter ConfigGetter) *Client {
 	return &Client{
 		client: &http.Client{},
 		params: Params{
-			Key:  configGetter.Key(),
-			Host: configGetter.Host(),
+			Key:  configGetter.KeyRateAPI(),
+			Host: configGetter.HostRateAPI(),
 		},
 	}
 }

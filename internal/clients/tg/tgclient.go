@@ -16,7 +16,7 @@ import (
 )
 
 type TokenGetter interface {
-	Token() string
+	TokenTG() string
 }
 
 type Client struct {
@@ -24,7 +24,7 @@ type Client struct {
 }
 
 func New(tokenGetter TokenGetter) (*Client, error) {
-	client, err := tgbotapi.NewBotAPI(tokenGetter.Token())
+	client, err := tgbotapi.NewBotAPI(tokenGetter.TokenTG())
 	if err != nil {
 		return nil, errors.Wrap(err, "NewBotAPI")
 	}

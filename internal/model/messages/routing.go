@@ -12,11 +12,11 @@ func (s *Model) IncomingMessage(msg Message, info *CommandInfo) error {
 	ctx := info.Context()
 
 	switch {
-	case msg.Text == "/start":
+	case msg.Text == CommandStart:
 		info.Command = Start
 		return s.tgClient.SendMessage(ctx, greeting, msg.UserID)
 
-	case msg.Text == "/week" || msg.Text == "/month" || msg.Text == "/year":
+	case msg.Text == CommandWeekReport || msg.Text == CommandMonthReport || msg.Text == CommandYearReport:
 		info.Command = commandReportText(msg.Text)
 		text, err := s.getReportText(ctx, msg)
 		if err != nil {
@@ -25,11 +25,11 @@ func (s *Model) IncomingMessage(msg Message, info *CommandInfo) error {
 		}
 		return s.tgClient.SendMessage(ctx, text, msg.UserID)
 
-	case msg.Text == "/currency":
+	case msg.Text == CommandGetCurrency:
 		info.Command = GetCurrency
 		return s.tgClient.SendMessageWithKeyboard(ctx, "Выберите валюту", "currency", msg.UserID)
 
-	case strings.HasPrefix(msg.Text, "/set_budget"):
+	case strings.HasPrefix(msg.Text, CommandSetBudget):
 		info.Command = SetBudget
 		err := s.setBudget(ctx, msg)
 		if err != nil {
@@ -38,7 +38,7 @@ func (s *Model) IncomingMessage(msg Message, info *CommandInfo) error {
 		}
 		return s.tgClient.SendMessage(ctx, "Бюджет на месяц установлен", msg.UserID)
 
-	case msg.Text == "/show_budget":
+	case msg.Text == CommandShowBudget:
 		info.Command = ShowBudget
 		text, err := s.getBudgetText(ctx, msg.UserID)
 		if err != nil {

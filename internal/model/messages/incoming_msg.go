@@ -101,11 +101,11 @@ func (s *Model) getReportText(ctx context.Context, msg Message) (string, error) 
 	currentTime := time.Now()
 	var startTime time.Time
 	switch msg.Text {
-	case "/week":
+	case CommandWeekReport:
 		startTime = currentTime.AddDate(0, 0, -int(currentTime.Weekday())) // Start from Monday
-	case "/month":
+	case CommandMonthReport:
 		startTime = currentTime.AddDate(0, 0, 1-currentTime.Day()) // Start from first day in month
-	case "/year":
+	case CommandYearReport:
 		startTime = currentTime.AddDate(0, 1-int(currentTime.Month()), 1-currentTime.Day()) // Start with first dat in year
 	}
 	startTime = time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())

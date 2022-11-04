@@ -11,6 +11,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/cache"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
@@ -31,6 +32,16 @@ type UserManipulator interface {
 	GetBudget(ctx context.Context, userID int64) (*float64, string, int64, error)
 }
 
+type ReportCacher interface {
+	GetWeekReport(ctx context.Context, key string) *cache.Item
+	SetWeekReport(ctx context.Context, key string, value *cache.Item) error
+	GetMonthReport(ctx context.Context, key string) *cache.Item
+	SetMonthReport(ctx context.Context, key string, value *cache.Item) error
+	GetYearReport(ctx context.Context, key string) *cache.Item
+	SetYearReport(ctx context.Context, key string, value *cache.Item) error
+	RemoveFromAll(ctx context.Context, key string) error
+}
+
 type Converter interface {
 	Exchange(ctx context.Context, value float64, from string, to string) (float64, error)
 	UpdateHistoricalRates(ctx context.Context, date *int64) error
@@ -38,18 +49,20 @@ type Converter interface {
 }
 
 type Model struct {
-	tgClient  MessageSender
-	userDB    UserManipulator
-	expenseDB ExpenseManipulator
-	converter Converter
+	tgClient    MessageSender
+	userDB      UserManipulator
+	expenseDB   ExpenseManipulator
+	reportCache ReportCacher
+	converter   Converter
 }
 
-func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, converter Converter) *Model {
+func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter) *Model {
 	return &Model{
-		tgClient:  tgClient,
-		userDB:    userDB,
-		expenseDB: expenseDB,
-		converter: converter,
+		tgClient:    tgClient,
+		userDB:      userDB,
+		expenseDB:   expenseDB,
+		reportCache: reportCache,
+		converter:   converter,
 	}
 }
 

@@ -17,15 +17,21 @@ type UserManipulator interface {
 	SetCode(ctx context.Context, userID int64, code string) error
 }
 
-type Model struct {
-	tgClient MessageSender
-	userDB   UserManipulator
+type ReportCacher interface {
+	RemoveFromAll(ctx context.Context, key string) error
 }
 
-func New(tgClient MessageSender, userDB UserManipulator) *Model {
+type Model struct {
+	tgClient    MessageSender
+	userDB      UserManipulator
+	reportCache ReportCacher
+}
+
+func New(tgClient MessageSender, userDB UserManipulator, reportCache ReportCacher) *Model {
 	return &Model{
-		tgClient: tgClient,
-		userDB:   userDB,
+		tgClient:    tgClient,
+		userDB:      userDB,
+		reportCache: reportCache,
 	}
 }
 

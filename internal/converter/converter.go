@@ -27,6 +27,10 @@ type UserManipulator interface {
 	GetAllUsers(ctx context.Context) ([]domain.User, error)
 }
 
+type ReportCacher interface {
+	RemoveFromAll(ctx context.Context, key string) error
+}
+
 type Rates struct {
 	USD float64
 	EUR float64
@@ -42,14 +46,16 @@ type Model struct {
 	rateClient   RateUpdater
 	rateDB       RateManipulator
 	userDB       UserManipulator
+	reportCache  ReportCacher
 	currentRates *Rates
 }
 
-func New(rateClient RateUpdater, rateDB RateManipulator, userDB UserManipulator) *Model {
+func New(rateClient RateUpdater, rateDB RateManipulator, userDB UserManipulator, reportCache ReportCacher) *Model {
 	return &Model{
 		rateClient:   rateClient,
 		rateDB:       rateDB,
 		userDB:       userDB,
+		reportCache:  reportCache,
 		currentRates: nil,
 	}
 }

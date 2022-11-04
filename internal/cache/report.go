@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 type ConfigGetter interface {
@@ -18,11 +19,6 @@ type ReportCache struct {
 	week  *redis.Client
 	month *redis.Client
 	year  *redis.Client
-}
-
-type Item struct {
-	Date   int64
-	Report string
 }
 
 func New(config ConfigGetter) *ReportCache {
@@ -50,11 +46,11 @@ func New(config ConfigGetter) *ReportCache {
 
 // WEEK
 
-func (r *ReportCache) GetWeekReport(ctx context.Context, key string) *Item {
+func (r *ReportCache) GetWeekReport(ctx context.Context, key string) *domain.Report {
 	return nil
 }
 
-func (r *ReportCache) SetWeekReport(ctx context.Context, key string, value *Item) error {
+func (r *ReportCache) SetWeekReport(ctx context.Context, key string, value *domain.Report) error {
 	return nil
 }
 
@@ -64,11 +60,11 @@ func (r *ReportCache) RemoveWeekReport(ctx context.Context, key string) error {
 
 // MONTH
 
-func (r *ReportCache) GetMonthReport(ctx context.Context, key string) *Item {
+func (r *ReportCache) GetMonthReport(ctx context.Context, key string) *domain.Report {
 	return nil
 }
 
-func (r *ReportCache) SetMonthReport(ctx context.Context, key string, value *Item) error {
+func (r *ReportCache) SetMonthReport(ctx context.Context, key string, value *domain.Report) error {
 	return nil
 }
 
@@ -78,11 +74,11 @@ func (r *ReportCache) RemoveMonthReport(ctx context.Context, key string) error {
 
 // YEAR
 
-func (r *ReportCache) GetYearReport(ctx context.Context, key string) *Item {
+func (r *ReportCache) GetYearReport(ctx context.Context, key string) *domain.Report {
 	return nil
 }
 
-func (r *ReportCache) SetYearReport(ctx context.Context, key string, value *Item) error {
+func (r *ReportCache) SetYearReport(ctx context.Context, key string, value *domain.Report) error {
 	return nil
 }
 

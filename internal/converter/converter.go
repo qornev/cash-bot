@@ -19,7 +19,7 @@ type RateUpdater interface {
 
 type RateManipulator interface {
 	Add(ctx context.Context, date int64, code string, nominal float64) error
-	Get(ctx context.Context, date int64, code string) (*Rate, error)
+	Get(ctx context.Context, date int64, code string) (*domain.Rate, error)
 }
 
 type UserManipulator interface {
@@ -35,11 +35,6 @@ type Rates struct {
 	USD float64
 	EUR float64
 	CNY float64
-}
-
-type Rate struct {
-	Code    string
-	Nominal float64
 }
 
 type Model struct {

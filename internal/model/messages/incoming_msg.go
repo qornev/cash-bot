@@ -11,7 +11,6 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/cache"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
@@ -33,12 +32,12 @@ type UserManipulator interface {
 }
 
 type ReportCacher interface {
-	GetWeekReport(ctx context.Context, key string) *cache.Item
-	SetWeekReport(ctx context.Context, key string, value *cache.Item) error
-	GetMonthReport(ctx context.Context, key string) *cache.Item
-	SetMonthReport(ctx context.Context, key string, value *cache.Item) error
-	GetYearReport(ctx context.Context, key string) *cache.Item
-	SetYearReport(ctx context.Context, key string, value *cache.Item) error
+	GetWeekReport(ctx context.Context, key string) *domain.Report
+	SetWeekReport(ctx context.Context, key string, value *domain.Report) error
+	GetMonthReport(ctx context.Context, key string) *domain.Report
+	SetMonthReport(ctx context.Context, key string, value *domain.Report) error
+	GetYearReport(ctx context.Context, key string) *domain.Report
+	SetYearReport(ctx context.Context, key string, value *domain.Report) error
 	RemoveFromAll(ctx context.Context, key string) error
 }
 

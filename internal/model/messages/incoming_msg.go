@@ -38,7 +38,7 @@ type ReportCacher interface {
 	SetMonthReport(ctx context.Context, key int64, value *domain.Report) error
 	GetYearReport(ctx context.Context, key int64) *domain.Report
 	SetYearReport(ctx context.Context, key int64, value *domain.Report) error
-	RemoveFromAll(ctx context.Context, key int64) error
+	RemoveFromAll(ctx context.Context, key []int64) error
 }
 
 type Converter interface {

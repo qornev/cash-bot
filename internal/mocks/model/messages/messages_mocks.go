@@ -250,7 +250,7 @@ func (mr *MockReportCacherMockRecorder) GetYearReport(ctx, key interface{}) *gom
 }
 
 // RemoveFromAll mocks base method.
-func (m *MockReportCacher) RemoveFromAll(ctx context.Context, key int64) error {
+func (m *MockReportCacher) RemoveFromAll(ctx context.Context, key []int64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveFromAll", ctx, key)
 	ret0, _ := ret[0].(error)

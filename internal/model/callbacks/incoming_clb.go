@@ -45,6 +45,10 @@ type Callback struct {
 func (s *Model) IncomingCallback(clb Callback) error {
 	ctx := context.Background()
 
+	if err := s.reportCache.RemoveFromAll(ctx, []int64{clb.UserID}); err != nil {
+		logger.Error("cannot remove report from cache")
+	}
+
 	err := s.setCode(clb.UserID, clb.Data)
 	if err != nil {
 		logger.Error("cannot set code state", zap.Int64("user_id", clb.UserID), zap.Error(err))

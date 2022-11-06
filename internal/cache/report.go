@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/opentracing/opentracing-go"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 type ConfigGetter interface {
@@ -48,24 +47,24 @@ func New(config ConfigGetter) *ReportCache {
 
 // WEEK
 
-func (r *ReportCache) GetWeekReport(ctx context.Context, key int64) *domain.Report {
+func (r *ReportCache) GetWeekReport(ctx context.Context, key int64) (string, bool) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "get week report from cache")
 	defer span.Finish()
 
-	var report domain.Report
+	var report string
 	err := r.week.Get(ctx, fmt.Sprint(key)).Scan(&report)
 	if err != nil {
-		return nil
+		return "", false
 	}
 
-	return &report
+	return report, true
 }
 
-func (r *ReportCache) SetWeekReport(ctx context.Context, key int64, value *domain.Report) error {
+func (r *ReportCache) SetWeekReport(ctx context.Context, key int64, value string) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "save week report in cache")
 	defer span.Finish()
 
-	err := r.week.Set(ctx, fmt.Sprint(key), *value, time.Hour*24*7).Err()
+	err := r.week.Set(ctx, fmt.Sprint(key), value, time.Hour*24*7).Err()
 	if err != nil {
 		return err
 	}
@@ -74,27 +73,27 @@ func (r *ReportCache) SetWeekReport(ctx context.Context, key int64, value *domai
 
 // MONTH
 
-func (r *ReportCache) GetMonthReport(ctx context.Context, key int64) *domain.Report {
+func (r *ReportCache) GetMonthReport(ctx context.Context, key int64) (string, bool) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "get month report from cache")
 	defer span.Finish()
 
-	var report domain.Report
+	var report string
 	err := r.month.Get(ctx, fmt.Sprint(key)).Scan(&report)
 	if err != nil {
-		return nil
+		return "", false
 	}
 
-	return &report
+	return report, true
 }
 
-func (r *ReportCache) SetMonthReport(ctx context.Context, key int64, value *domain.Report) error {
+func (r *ReportCache) SetMonthReport(ctx context.Context, key int64, value string) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "save month report in cache")
 	defer span.Finish()
 
 	untilDate := time.Now().AddDate(0, 1, 0)
 	untilDate = time.Date(untilDate.Year(), untilDate.Month(), 1, 0, 0, 0, 0, untilDate.Location())
 
-	err := r.month.Set(ctx, fmt.Sprint(key), *value, time.Until(untilDate)).Err()
+	err := r.month.Set(ctx, fmt.Sprint(key), value, time.Until(untilDate)).Err()
 	if err != nil {
 		return err
 	}
@@ -103,27 +102,27 @@ func (r *ReportCache) SetMonthReport(ctx context.Context, key int64, value *doma
 
 // YEAR
 
-func (r *ReportCache) GetYearReport(ctx context.Context, key int64) *domain.Report {
+func (r *ReportCache) GetYearReport(ctx context.Context, key int64) (string, bool) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "get year report from cache")
 	defer span.Finish()
 
-	var report domain.Report
+	var report string
 	err := r.year.Get(ctx, fmt.Sprint(key)).Scan(&report)
 	if err != nil {
-		return nil
+		return "", false
 	}
 
-	return &report
+	return report, true
 }
 
-func (r *ReportCache) SetYearReport(ctx context.Context, key int64, value *domain.Report) error {
+func (r *ReportCache) SetYearReport(ctx context.Context, key int64, value string) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "save year report in cache")
 	defer span.Finish()
 
 	untilDate := time.Now().AddDate(1, 0, 0)
 	untilDate = time.Date(untilDate.Year(), 1, 1, 0, 0, 0, 0, untilDate.Location())
 
-	err := r.year.Set(ctx, fmt.Sprint(key), *value, time.Until(untilDate)).Err()
+	err := r.year.Set(ctx, fmt.Sprint(key), value, time.Until(untilDate)).Err()
 	if err != nil {
 		return err
 	}

@@ -130,8 +130,13 @@ func (m *Model) setCurrentRates(ctx context.Context, rates *Rates) error {
 		return err
 	}
 
+	clearReportCacheUsers := []int64{}
 	for _, user := range users {
-		if user.Budget == nil || user.Code == RUB {
+		if user.Code == RUB {
+			continue
+		}
+		if user.Budget == nil {
+			clearReportCacheUsers = append(clearReportCacheUsers, user.ID)
 			continue
 		}
 
@@ -165,6 +170,10 @@ func (m *Model) setCurrentRates(ctx context.Context, rates *Rates) error {
 		if err = m.userDB.UpdateBudget(ctx, user.ID, *user.Budget*diff); err != nil {
 			return err
 		}
+	}
+
+	if err := m.reportCache.RemoveFromAll(ctx, clearReportCacheUsers); err != nil {
+		return err
 	}
 
 	m.currentRates = rates

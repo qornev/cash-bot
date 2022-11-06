@@ -106,6 +106,7 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 					"error processing message",
 					zap.Int64("user_id", update.Message.From.ID),
 					zap.String("user_input", update.Message.Text),
+					zap.Error(err),
 				)
 			}
 		} else if update.CallbackQuery != nil { // If we got a callback

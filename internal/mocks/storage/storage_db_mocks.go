@@ -47,44 +47,44 @@ func (mr *MockConfigGetterMockRecorder) HostDB() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HostDB", reflect.TypeOf((*MockConfigGetter)(nil).HostDB))
 }
 
-// Password mocks base method.
-func (m *MockConfigGetter) Password() string {
+// PasswordDB mocks base method.
+func (m *MockConfigGetter) PasswordDB() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Password")
+	ret := m.ctrl.Call(m, "PasswordDB")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Password indicates an expected call of Password.
-func (mr *MockConfigGetterMockRecorder) Password() *gomock.Call {
+// PasswordDB indicates an expected call of PasswordDB.
+func (mr *MockConfigGetterMockRecorder) PasswordDB() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Password", reflect.TypeOf((*MockConfigGetter)(nil).Password))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PasswordDB", reflect.TypeOf((*MockConfigGetter)(nil).PasswordDB))
 }
 
-// Port mocks base method.
-func (m *MockConfigGetter) Port() int {
+// PortDB mocks base method.
+func (m *MockConfigGetter) PortDB() int {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Port")
+	ret := m.ctrl.Call(m, "PortDB")
 	ret0, _ := ret[0].(int)
 	return ret0
 }
 
-// Port indicates an expected call of Port.
-func (mr *MockConfigGetterMockRecorder) Port() *gomock.Call {
+// PortDB indicates an expected call of PortDB.
+func (mr *MockConfigGetterMockRecorder) PortDB() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Port", reflect.TypeOf((*MockConfigGetter)(nil).Port))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PortDB", reflect.TypeOf((*MockConfigGetter)(nil).PortDB))
 }
 
-// Username mocks base method.
-func (m *MockConfigGetter) Username() string {
+// UsernameDB mocks base method.
+func (m *MockConfigGetter) UsernameDB() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Username")
+	ret := m.ctrl.Call(m, "UsernameDB")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Username indicates an expected call of Username.
-func (mr *MockConfigGetterMockRecorder) Username() *gomock.Call {
+// UsernameDB indicates an expected call of UsernameDB.
+func (mr *MockConfigGetterMockRecorder) UsernameDB() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Username", reflect.TypeOf((*MockConfigGetter)(nil).Username))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UsernameDB", reflect.TypeOf((*MockConfigGetter)(nil).UsernameDB))
 }

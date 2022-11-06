@@ -84,3 +84,40 @@ func (mr *MockUserManipulatorMockRecorder) SetCode(ctx, userID, code interface{}
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCode", reflect.TypeOf((*MockUserManipulator)(nil).SetCode), ctx, userID, code)
 }
+
+// MockReportCacher is a mock of ReportCacher interface.
+type MockReportCacher struct {
+	ctrl     *gomock.Controller
+	recorder *MockReportCacherMockRecorder
+}
+
+// MockReportCacherMockRecorder is the mock recorder for MockReportCacher.
+type MockReportCacherMockRecorder struct {
+	mock *MockReportCacher
+}
+
+// NewMockReportCacher creates a new mock instance.
+func NewMockReportCacher(ctrl *gomock.Controller) *MockReportCacher {
+	mock := &MockReportCacher{ctrl: ctrl}
+	mock.recorder = &MockReportCacherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockReportCacher) EXPECT() *MockReportCacherMockRecorder {
+	return m.recorder
+}
+
+// RemoveFromAll mocks base method.
+func (m *MockReportCacher) RemoveFromAll(ctx context.Context, key int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveFromAll", ctx, key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveFromAll indicates an expected call of RemoveFromAll.
+func (mr *MockReportCacherMockRecorder) RemoveFromAll(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveFromAll", reflect.TypeOf((*MockReportCacher)(nil).RemoveFromAll), ctx, key)
+}

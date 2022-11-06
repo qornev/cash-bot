@@ -184,6 +184,127 @@ func (mr *MockUserManipulatorMockRecorder) SetBudget(ctx, userID, budget interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBudget", reflect.TypeOf((*MockUserManipulator)(nil).SetBudget), ctx, userID, budget)
 }
 
+// MockReportCacher is a mock of ReportCacher interface.
+type MockReportCacher struct {
+	ctrl     *gomock.Controller
+	recorder *MockReportCacherMockRecorder
+}
+
+// MockReportCacherMockRecorder is the mock recorder for MockReportCacher.
+type MockReportCacherMockRecorder struct {
+	mock *MockReportCacher
+}
+
+// NewMockReportCacher creates a new mock instance.
+func NewMockReportCacher(ctrl *gomock.Controller) *MockReportCacher {
+	mock := &MockReportCacher{ctrl: ctrl}
+	mock.recorder = &MockReportCacherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockReportCacher) EXPECT() *MockReportCacherMockRecorder {
+	return m.recorder
+}
+
+// GetMonthReport mocks base method.
+func (m *MockReportCacher) GetMonthReport(ctx context.Context, key int64) *domain.Report {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMonthReport", ctx, key)
+	ret0, _ := ret[0].(*domain.Report)
+	return ret0
+}
+
+// GetMonthReport indicates an expected call of GetMonthReport.
+func (mr *MockReportCacherMockRecorder) GetMonthReport(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMonthReport", reflect.TypeOf((*MockReportCacher)(nil).GetMonthReport), ctx, key)
+}
+
+// GetWeekReport mocks base method.
+func (m *MockReportCacher) GetWeekReport(ctx context.Context, key int64) *domain.Report {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWeekReport", ctx, key)
+	ret0, _ := ret[0].(*domain.Report)
+	return ret0
+}
+
+// GetWeekReport indicates an expected call of GetWeekReport.
+func (mr *MockReportCacherMockRecorder) GetWeekReport(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWeekReport", reflect.TypeOf((*MockReportCacher)(nil).GetWeekReport), ctx, key)
+}
+
+// GetYearReport mocks base method.
+func (m *MockReportCacher) GetYearReport(ctx context.Context, key int64) *domain.Report {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetYearReport", ctx, key)
+	ret0, _ := ret[0].(*domain.Report)
+	return ret0
+}
+
+// GetYearReport indicates an expected call of GetYearReport.
+func (mr *MockReportCacherMockRecorder) GetYearReport(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetYearReport", reflect.TypeOf((*MockReportCacher)(nil).GetYearReport), ctx, key)
+}
+
+// RemoveFromAll mocks base method.
+func (m *MockReportCacher) RemoveFromAll(ctx context.Context, key int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveFromAll", ctx, key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveFromAll indicates an expected call of RemoveFromAll.
+func (mr *MockReportCacherMockRecorder) RemoveFromAll(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveFromAll", reflect.TypeOf((*MockReportCacher)(nil).RemoveFromAll), ctx, key)
+}
+
+// SetMonthReport mocks base method.
+func (m *MockReportCacher) SetMonthReport(ctx context.Context, key int64, value *domain.Report) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetMonthReport", ctx, key, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetMonthReport indicates an expected call of SetMonthReport.
+func (mr *MockReportCacherMockRecorder) SetMonthReport(ctx, key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMonthReport", reflect.TypeOf((*MockReportCacher)(nil).SetMonthReport), ctx, key, value)
+}
+
+// SetWeekReport mocks base method.
+func (m *MockReportCacher) SetWeekReport(ctx context.Context, key int64, value *domain.Report) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetWeekReport", ctx, key, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetWeekReport indicates an expected call of SetWeekReport.
+func (mr *MockReportCacherMockRecorder) SetWeekReport(ctx, key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWeekReport", reflect.TypeOf((*MockReportCacher)(nil).SetWeekReport), ctx, key, value)
+}
+
+// SetYearReport mocks base method.
+func (m *MockReportCacher) SetYearReport(ctx context.Context, key int64, value *domain.Report) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetYearReport", ctx, key, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetYearReport indicates an expected call of SetYearReport.
+func (mr *MockReportCacherMockRecorder) SetYearReport(ctx, key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetYearReport", reflect.TypeOf((*MockReportCacher)(nil).SetYearReport), ctx, key, value)
+}
+
 // MockConverter is a mock of Converter interface.
 type MockConverter struct {
 	ctrl     *gomock.Controller

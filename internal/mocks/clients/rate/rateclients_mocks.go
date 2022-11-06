@@ -33,30 +33,30 @@ func (m *MockConfigGetter) EXPECT() *MockConfigGetterMockRecorder {
 	return m.recorder
 }
 
-// Host mocks base method.
-func (m *MockConfigGetter) Host() string {
+// HostRateAPI mocks base method.
+func (m *MockConfigGetter) HostRateAPI() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Host")
+	ret := m.ctrl.Call(m, "HostRateAPI")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Host indicates an expected call of Host.
-func (mr *MockConfigGetterMockRecorder) Host() *gomock.Call {
+// HostRateAPI indicates an expected call of HostRateAPI.
+func (mr *MockConfigGetterMockRecorder) HostRateAPI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Host", reflect.TypeOf((*MockConfigGetter)(nil).Host))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HostRateAPI", reflect.TypeOf((*MockConfigGetter)(nil).HostRateAPI))
 }
 
-// Key mocks base method.
-func (m *MockConfigGetter) Key() string {
+// KeyRateAPI mocks base method.
+func (m *MockConfigGetter) KeyRateAPI() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Key")
+	ret := m.ctrl.Call(m, "KeyRateAPI")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Key indicates an expected call of Key.
-func (mr *MockConfigGetterMockRecorder) Key() *gomock.Call {
+// KeyRateAPI indicates an expected call of KeyRateAPI.
+func (mr *MockConfigGetterMockRecorder) KeyRateAPI() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Key", reflect.TypeOf((*MockConfigGetter)(nil).Key))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyRateAPI", reflect.TypeOf((*MockConfigGetter)(nil).KeyRateAPI))
 }

@@ -13,9 +13,12 @@ func Test_IncomingCallback_ShouldChangeCurrency(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sender := mocks.NewMockMessageSender(ctrl)
 	stater := mocks.NewMockUserManipulator(ctrl)
-	model := New(sender, stater, nil)
+	reportCache := mocks.NewMockReportCacher(ctrl)
+	model := New(sender, stater, reportCache)
 
 	var userID int64 = 1234
+
+	reportCache.EXPECT().RemoveFromAll(gomock.Any(), gomock.Any()).Return(nil)
 
 	sender.EXPECT().SendMessage(gomock.Any(), "Валюта изменена на USD", userID)
 	stater.EXPECT().SetCode(gomock.Any(), userID, converter.USD)
@@ -39,7 +42,7 @@ func Test_IncomingCallback_ShouldRemoveUserReportFromCache(t *testing.T) {
 	sender.EXPECT().SendMessage(gomock.Any(), gomock.Any(), userID)
 	stater.EXPECT().SetCode(gomock.Any(), userID, gomock.Any())
 
-	reportCache.EXPECT().RemoveFromAll(gomock.Any(), userID)
+	reportCache.EXPECT().RemoveFromAll(gomock.Any(), []int64{userID})
 
 	model := New(sender, stater, reportCache)
 	err := model.IncomingCallback(Callback{

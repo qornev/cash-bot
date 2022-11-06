@@ -208,11 +208,12 @@ func (m *MockReportCacher) EXPECT() *MockReportCacherMockRecorder {
 }
 
 // GetMonthReport mocks base method.
-func (m *MockReportCacher) GetMonthReport(ctx context.Context, key int64) *domain.Report {
+func (m *MockReportCacher) GetMonthReport(ctx context.Context, key int64) (string, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMonthReport", ctx, key)
-	ret0, _ := ret[0].(*domain.Report)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // GetMonthReport indicates an expected call of GetMonthReport.
@@ -222,11 +223,12 @@ func (mr *MockReportCacherMockRecorder) GetMonthReport(ctx, key interface{}) *go
 }
 
 // GetWeekReport mocks base method.
-func (m *MockReportCacher) GetWeekReport(ctx context.Context, key int64) *domain.Report {
+func (m *MockReportCacher) GetWeekReport(ctx context.Context, key int64) (string, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWeekReport", ctx, key)
-	ret0, _ := ret[0].(*domain.Report)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // GetWeekReport indicates an expected call of GetWeekReport.
@@ -236,11 +238,12 @@ func (mr *MockReportCacherMockRecorder) GetWeekReport(ctx, key interface{}) *gom
 }
 
 // GetYearReport mocks base method.
-func (m *MockReportCacher) GetYearReport(ctx context.Context, key int64) *domain.Report {
+func (m *MockReportCacher) GetYearReport(ctx context.Context, key int64) (string, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetYearReport", ctx, key)
-	ret0, _ := ret[0].(*domain.Report)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // GetYearReport indicates an expected call of GetYearReport.
@@ -264,7 +267,7 @@ func (mr *MockReportCacherMockRecorder) RemoveFromAll(ctx, key interface{}) *gom
 }
 
 // SetMonthReport mocks base method.
-func (m *MockReportCacher) SetMonthReport(ctx context.Context, key int64, value *domain.Report) error {
+func (m *MockReportCacher) SetMonthReport(ctx context.Context, key int64, value string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetMonthReport", ctx, key, value)
 	ret0, _ := ret[0].(error)
@@ -278,7 +281,7 @@ func (mr *MockReportCacherMockRecorder) SetMonthReport(ctx, key, value interface
 }
 
 // SetWeekReport mocks base method.
-func (m *MockReportCacher) SetWeekReport(ctx context.Context, key int64, value *domain.Report) error {
+func (m *MockReportCacher) SetWeekReport(ctx context.Context, key int64, value string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetWeekReport", ctx, key, value)
 	ret0, _ := ret[0].(error)
@@ -292,7 +295,7 @@ func (mr *MockReportCacherMockRecorder) SetWeekReport(ctx, key, value interface{
 }
 
 // SetYearReport mocks base method.
-func (m *MockReportCacher) SetYearReport(ctx context.Context, key int64, value *domain.Report) error {
+func (m *MockReportCacher) SetYearReport(ctx context.Context, key int64, value string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetYearReport", ctx, key, value)
 	ret0, _ := ret[0].(error)

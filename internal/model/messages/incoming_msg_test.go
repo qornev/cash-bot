@@ -114,8 +114,9 @@ func Test_onAddExpense_ShouldListExpense(t *testing.T) {
 	sender := mocks.NewMockMessageSender(ctrl)
 	userDB := mocks.NewMockUserManipulator(ctrl)
 	expenseDB := mocks.NewMockExpenseManipulator(ctrl)
+	reportCacher := mocks.NewMockReportCacher(ctrl)
 	conver := mocks.NewMockConverter(ctrl)
-	model := New(sender, userDB, expenseDB, nil, conver)
+	model := New(sender, userDB, expenseDB, reportCacher, conver)
 
 	userID := int64(1234)
 	dateString := "2022-09-09"
@@ -125,6 +126,7 @@ func Test_onAddExpense_ShouldListExpense(t *testing.T) {
 
 	userDB.EXPECT().GetCode(gomock.Any(), userID).Return(converter.RUB, nil)
 	conver.EXPECT().Exchange(gomock.Any(), amount, converter.RUB, converter.RUB).Return(amount, nil)
+	reportCacher.EXPECT().RemoveFromAll(gomock.Any(), []int64{userID})
 	expenseDB.EXPECT().Add(gomock.Any(), date.Unix(), userID, category, amount)
 	sender.EXPECT().SendMessage(gomock.Any(), "Расход записан:)", userID)
 
@@ -150,30 +152,11 @@ func Test_GetReport_ShouldCheckIfUserReportExistInCache(t *testing.T) {
 	reportCache := mocks.NewMockReportCacher(ctrl)
 
 	userID := int64(1234)
-	now := time.Now().Unix()
+	report := "ddd - 369.00 RUB\n"
 
-	expenseDB.EXPECT().Get(gomock.Any(), userID).Return([]domain.Expense{
-		{
-			Amount:   123,
-			Category: "ddd",
-			Date:     now,
-		},
-		{
-			Amount:   123,
-			Category: "ddd",
-			Date:     now - 100,
-		},
-		{
-			Amount:   123,
-			Category: "ddd",
-			Date:     now - 1000,
-		},
-	}, nil).Times(3)
-	userDB.EXPECT().GetCode(gomock.Any(), userID).Return(converter.RUB, nil).Times(3)
-
-	reportCache.EXPECT().GetWeekReport(gomock.Any(), userID).Return("ddd - 369.00 RUB\n")
-	reportCache.EXPECT().GetMonthReport(gomock.Any(), userID).Return("ddd - 369.00 RUB\n")
-	reportCache.EXPECT().GetYearReport(gomock.Any(), userID).Return("ddd - 369.00 RUB\n")
+	reportCache.EXPECT().GetWeekReport(gomock.Any(), userID).Return(report, true)
+	reportCache.EXPECT().GetMonthReport(gomock.Any(), userID).Return(report, true)
+	reportCache.EXPECT().GetYearReport(gomock.Any(), userID).Return(report, true)
 
 	model := New(nil, userDB, expenseDB, reportCache, nil)
 	_, err := model.getReportText(context.Background(), Message{
@@ -200,6 +183,7 @@ func Test_GetReport_ShouldSaveUserReportToCache(t *testing.T) {
 	reportCache := mocks.NewMockReportCacher(ctrl)
 
 	userID := int64(1234)
+	report := "ddd - 369.00 RUB\n"
 	now := time.Now().Unix()
 
 	expenseDB.EXPECT().Get(gomock.Any(), userID).Return([]domain.Expense{
@@ -220,13 +204,13 @@ func Test_GetReport_ShouldSaveUserReportToCache(t *testing.T) {
 		},
 	}, nil).Times(3)
 	userDB.EXPECT().GetCode(gomock.Any(), userID).Return(converter.RUB, nil).Times(3)
-	reportCache.EXPECT().GetWeekReport(gomock.Any(), userID).Return(nil)
-	reportCache.EXPECT().GetMonthReport(gomock.Any(), userID).Return(nil)
-	reportCache.EXPECT().GetYearReport(gomock.Any(), userID).Return(nil)
+	reportCache.EXPECT().GetWeekReport(gomock.Any(), userID).Return("", false)
+	reportCache.EXPECT().GetMonthReport(gomock.Any(), userID).Return("", false)
+	reportCache.EXPECT().GetYearReport(gomock.Any(), userID).Return("", false)
 
-	reportCache.EXPECT().SetWeekReport(gomock.Any(), userID, "ddd - 369.00 RUB\n")
-	reportCache.EXPECT().SetMonthReport(gomock.Any(), userID, "ddd - 369.00 RUB\n")
-	reportCache.EXPECT().SetYearReport(gomock.Any(), userID, "ddd - 369.00 RUB\n")
+	reportCache.EXPECT().SetWeekReport(gomock.Any(), userID, report)
+	reportCache.EXPECT().SetMonthReport(gomock.Any(), userID, report)
+	reportCache.EXPECT().SetYearReport(gomock.Any(), userID, report)
 
 	model := New(nil, userDB, expenseDB, reportCache, nil)
 	_, err := model.getReportText(context.Background(), Message{
@@ -264,7 +248,7 @@ func Test_addExpense_ShouldRemoveUserReportFromCache(t *testing.T) {
 	conver.EXPECT().Exchange(gomock.Any(), expense.Amount, converter.RUB, converter.RUB).Return(expense.Amount, nil)
 	expenseDB.EXPECT().Add(gomock.Any(), expense.Date, userID, expense.Category, expense.Amount)
 
-	reportCache.EXPECT().RemoveFromAll(gomock.Any(), userID)
+	reportCache.EXPECT().RemoveFromAll(gomock.Any(), []int64{userID})
 
 	model := New(nil, userDB, expenseDB, reportCache, conver)
 	err := model.addExpense(

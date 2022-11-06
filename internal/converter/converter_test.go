@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 	mocks "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/mocks/converter"
@@ -73,10 +74,9 @@ func Test_UpdateRecentRates_ShouldRemoveExtraCurrenciesUserReportsFromCache(t *t
 	rateDB.EXPECT().Add(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	userDB.EXPECT().GetAllUsers(gomock.Any()).Return(users, nil)
 
-	reportCacher.EXPECT().RemoveFromAll(gomock.Any(), users[0].ID)
-	reportCacher.EXPECT().RemoveFromAll(gomock.Any(), users[1].ID)
-	reportCacher.EXPECT().RemoveFromAll(gomock.Any(), users[2].ID)
+	reportCacher.EXPECT().RemoveFromAll(gomock.Any(), []int64{users[0].ID, users[1].ID, users[2].ID})
 
 	model := converter.New(rateUpdater, rateDB, userDB, reportCacher)
-	model.UpdateRecentRates(context.Background())
+	err := model.UpdateRecentRates(context.Background())
+	assert.NoError(t, err)
 }

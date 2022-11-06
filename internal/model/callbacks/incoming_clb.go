@@ -18,7 +18,7 @@ type UserManipulator interface {
 }
 
 type ReportCacher interface {
-	RemoveFromAll(ctx context.Context, key string) error
+	RemoveFromAll(ctx context.Context, key int64) error
 }
 
 type Model struct {

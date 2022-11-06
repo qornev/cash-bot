@@ -46,46 +46,46 @@ func New(config ConfigGetter) *ReportCache {
 
 // WEEK
 
-func (r *ReportCache) GetWeekReport(ctx context.Context, key string) *domain.Report {
+func (r *ReportCache) GetWeekReport(ctx context.Context, key int64) *domain.Report {
 	return nil
 }
 
-func (r *ReportCache) SetWeekReport(ctx context.Context, key string, value *domain.Report) error {
+func (r *ReportCache) SetWeekReport(ctx context.Context, key int64, value *domain.Report) error {
 	return nil
 }
 
-func (r *ReportCache) RemoveWeekReport(ctx context.Context, key string) error {
+func (r *ReportCache) RemoveWeekReport(ctx context.Context, key int64) error {
 	return nil
 }
 
 // MONTH
 
-func (r *ReportCache) GetMonthReport(ctx context.Context, key string) *domain.Report {
+func (r *ReportCache) GetMonthReport(ctx context.Context, key int64) *domain.Report {
 	return nil
 }
 
-func (r *ReportCache) SetMonthReport(ctx context.Context, key string, value *domain.Report) error {
+func (r *ReportCache) SetMonthReport(ctx context.Context, key int64, value *domain.Report) error {
 	return nil
 }
 
-func (r *ReportCache) RemoveMonthReport(ctx context.Context, key string) error {
+func (r *ReportCache) RemoveMonthReport(ctx context.Context, key int64) error {
 	return nil
 }
 
 // YEAR
 
-func (r *ReportCache) GetYearReport(ctx context.Context, key string) *domain.Report {
+func (r *ReportCache) GetYearReport(ctx context.Context, key int64) *domain.Report {
 	return nil
 }
 
-func (r *ReportCache) SetYearReport(ctx context.Context, key string, value *domain.Report) error {
+func (r *ReportCache) SetYearReport(ctx context.Context, key int64, value *domain.Report) error {
 	return nil
 }
 
-func (r *ReportCache) RemoveYearReport(ctx context.Context, key string) error {
+func (r *ReportCache) RemoveYearReport(ctx context.Context, key int64) error {
 	return nil
 }
 
 // ALL
 
-func (r *ReportCache) RemoveFromAll(ctx context.Context, key string) error
+func (r *ReportCache) RemoveFromAll(ctx context.Context, key int64) error

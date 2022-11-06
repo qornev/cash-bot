@@ -32,13 +32,13 @@ type UserManipulator interface {
 }
 
 type ReportCacher interface {
-	GetWeekReport(ctx context.Context, key string) *domain.Report
-	SetWeekReport(ctx context.Context, key string, value *domain.Report) error
-	GetMonthReport(ctx context.Context, key string) *domain.Report
-	SetMonthReport(ctx context.Context, key string, value *domain.Report) error
-	GetYearReport(ctx context.Context, key string) *domain.Report
-	SetYearReport(ctx context.Context, key string, value *domain.Report) error
-	RemoveFromAll(ctx context.Context, key string) error
+	GetWeekReport(ctx context.Context, key int64) *domain.Report
+	SetWeekReport(ctx context.Context, key int64, value *domain.Report) error
+	GetMonthReport(ctx context.Context, key int64) *domain.Report
+	SetMonthReport(ctx context.Context, key int64, value *domain.Report) error
+	GetYearReport(ctx context.Context, key int64) *domain.Report
+	SetYearReport(ctx context.Context, key int64, value *domain.Report) error
+	RemoveFromAll(ctx context.Context, key int64) error
 }
 
 type Converter interface {

@@ -25,15 +25,24 @@ const (
 	ShowBudget  = "Show month budget"
 	AddExpense  = "Add expense"
 	Unknown     = "Unknown"
+
+	// Raw commands
+	CommandStart       = "/start"
+	CommandWeekReport  = "/week"
+	CommandMonthReport = "/month"
+	CommandYearReport  = "/year"
+	CommandGetCurrency = "/currency"
+	CommandSetBudget   = "/set_budget"
+	CommandShowBudget  = "/show_budget"
 )
 
 func commandReportText(command string) string {
 	switch command {
-	case "/week":
+	case CommandWeekReport:
 		return WeekReport
-	case "/month":
+	case CommandMonthReport:
 		return MonthReport
-	case "/year":
+	case CommandYearReport:
 		return YearReport
 	default:
 		return ""

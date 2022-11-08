@@ -19,12 +19,16 @@ type RateUpdater interface {
 
 type RateManipulator interface {
 	Add(ctx context.Context, date int64, code string, nominal float64) error
-	Get(ctx context.Context, date int64, code string) (*Rate, error)
+	Get(ctx context.Context, date int64, code string) (*domain.Rate, error)
 }
 
 type UserManipulator interface {
 	UpdateBudget(ctx context.Context, userID int64, budget float64) error
 	GetAllUsers(ctx context.Context) ([]domain.User, error)
+}
+
+type ReportCacher interface {
+	RemoveFromAll(ctx context.Context, key []int64) error
 }
 
 type Rates struct {
@@ -33,23 +37,20 @@ type Rates struct {
 	CNY float64
 }
 
-type Rate struct {
-	Code    string
-	Nominal float64
-}
-
 type Model struct {
 	rateClient   RateUpdater
 	rateDB       RateManipulator
 	userDB       UserManipulator
+	reportCache  ReportCacher
 	currentRates *Rates
 }
 
-func New(rateClient RateUpdater, rateDB RateManipulator, userDB UserManipulator) *Model {
+func New(rateClient RateUpdater, rateDB RateManipulator, userDB UserManipulator, reportCache ReportCacher) *Model {
 	return &Model{
 		rateClient:   rateClient,
 		rateDB:       rateDB,
 		userDB:       userDB,
+		reportCache:  reportCache,
 		currentRates: nil,
 	}
 }
@@ -129,8 +130,13 @@ func (m *Model) setCurrentRates(ctx context.Context, rates *Rates) error {
 		return err
 	}
 
+	clearReportCacheUsers := []int64{}
 	for _, user := range users {
-		if user.Budget == nil || user.Code == RUB {
+		if user.Code == RUB {
+			continue
+		}
+		if user.Budget == nil {
+			clearReportCacheUsers = append(clearReportCacheUsers, user.ID)
 			continue
 		}
 
@@ -164,6 +170,10 @@ func (m *Model) setCurrentRates(ctx context.Context, rates *Rates) error {
 		if err = m.userDB.UpdateBudget(ctx, user.ID, *user.Budget*diff); err != nil {
 			return err
 		}
+	}
+
+	if err := m.reportCache.RemoveFromAll(ctx, clearReportCacheUsers); err != nil {
+		return err
 	}
 
 	m.currentRates = rates

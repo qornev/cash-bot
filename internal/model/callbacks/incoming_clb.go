@@ -17,15 +17,21 @@ type UserManipulator interface {
 	SetCode(ctx context.Context, userID int64, code string) error
 }
 
-type Model struct {
-	tgClient MessageSender
-	userDB   UserManipulator
+type ReportCacher interface {
+	RemoveFromAll(ctx context.Context, key []int64) error
 }
 
-func New(tgClient MessageSender, userDB UserManipulator) *Model {
+type Model struct {
+	tgClient    MessageSender
+	userDB      UserManipulator
+	reportCache ReportCacher
+}
+
+func New(tgClient MessageSender, userDB UserManipulator, reportCache ReportCacher) *Model {
 	return &Model{
-		tgClient: tgClient,
-		userDB:   userDB,
+		tgClient:    tgClient,
+		userDB:      userDB,
+		reportCache: reportCache,
 	}
 }
 
@@ -38,6 +44,10 @@ type Callback struct {
 // Callbacks routing
 func (s *Model) IncomingCallback(clb Callback) error {
 	ctx := context.Background()
+
+	if err := s.reportCache.RemoveFromAll(ctx, []int64{clb.UserID}); err != nil {
+		logger.Error("cannot remove report from cache")
+	}
 
 	err := s.setCode(clb.UserID, clb.Data)
 	if err != nil {

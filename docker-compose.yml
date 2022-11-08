@@ -39,3 +39,10 @@ services:
       - 16686:16686 # web
       - 14268:14268
       - 9411:9411
+
+  redis:
+    image: redis:7.0.5-bullseye
+    ports:
+      - 6379:6379
+    volumes:
+      - ./.redis-data:/data

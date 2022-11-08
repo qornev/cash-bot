@@ -31,6 +31,16 @@ type UserManipulator interface {
 	GetBudget(ctx context.Context, userID int64) (*float64, string, int64, error)
 }
 
+type ReportCacher interface {
+	GetWeekReport(ctx context.Context, key int64) (string, bool)
+	SetWeekReport(ctx context.Context, key int64, value string) error
+	GetMonthReport(ctx context.Context, key int64) (string, bool)
+	SetMonthReport(ctx context.Context, key int64, value string) error
+	GetYearReport(ctx context.Context, key int64) (string, bool)
+	SetYearReport(ctx context.Context, key int64, value string) error
+	RemoveFromAll(ctx context.Context, key []int64) error
+}
+
 type Converter interface {
 	Exchange(ctx context.Context, value float64, from string, to string) (float64, error)
 	UpdateHistoricalRates(ctx context.Context, date *int64) error
@@ -38,18 +48,20 @@ type Converter interface {
 }
 
 type Model struct {
-	tgClient  MessageSender
-	userDB    UserManipulator
-	expenseDB ExpenseManipulator
-	converter Converter
+	tgClient    MessageSender
+	userDB      UserManipulator
+	expenseDB   ExpenseManipulator
+	reportCache ReportCacher
+	converter   Converter
 }
 
-func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, converter Converter) *Model {
+func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter) *Model {
 	return &Model{
-		tgClient:  tgClient,
-		userDB:    userDB,
-		expenseDB: expenseDB,
-		converter: converter,
+		tgClient:    tgClient,
+		userDB:      userDB,
+		expenseDB:   expenseDB,
+		reportCache: reportCache,
+		converter:   converter,
 	}
 }
 
@@ -88,15 +100,24 @@ func (s *Model) getReportText(ctx context.Context, msg Message) (string, error) 
 
 	currentTime := time.Now()
 	var startTime time.Time
+	var report string
+	var ok bool
 	switch msg.Text {
-	case "/week":
+	case CommandWeekReport:
 		startTime = currentTime.AddDate(0, 0, -int(currentTime.Weekday())) // Start from Monday
-	case "/month":
+		report, ok = s.reportCache.GetWeekReport(ctx, msg.UserID)
+	case CommandMonthReport:
 		startTime = currentTime.AddDate(0, 0, 1-currentTime.Day()) // Start from first day in month
-	case "/year":
+		report, ok = s.reportCache.GetMonthReport(ctx, msg.UserID)
+	case CommandYearReport:
 		startTime = currentTime.AddDate(0, 1-int(currentTime.Month()), 1-currentTime.Day()) // Start with first dat in year
+		report, ok = s.reportCache.GetYearReport(ctx, msg.UserID)
 	}
 	startTime = time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())
+
+	if ok {
+		return "Отчет:\n" + report, nil
+	}
 
 	report, err := s.calcReport(ctx, startTime, msg)
 	if err != nil {
@@ -105,6 +126,18 @@ func (s *Model) getReportText(ctx context.Context, msg Message) (string, error) 
 
 	if len(report) == 0 {
 		return "Для начала добавьте покупки", nil
+	}
+
+	switch msg.Text {
+	case CommandWeekReport:
+		err = s.reportCache.SetWeekReport(ctx, msg.UserID, report)
+	case CommandMonthReport:
+		err = s.reportCache.SetMonthReport(ctx, msg.UserID, report)
+	case CommandYearReport:
+		err = s.reportCache.SetYearReport(ctx, msg.UserID, report)
+	}
+	if err != nil {
+		return "", err
 	}
 	return "Отчет:\n" + report, nil
 }
@@ -165,6 +198,10 @@ func (s *Model) addExpense(ctx context.Context, expense *domain.Expense, msg Mes
 	span, ctx := opentracing.StartSpanFromContext(ctx, "add expense")
 	span.SetTag("command", AddExpense)
 	defer span.Finish()
+
+	if err := s.reportCache.RemoveFromAll(ctx, []int64{msg.UserID}); err != nil {
+		return errors.Wrap(err, "cannot remove user report from cache")
+	}
 
 	code, err := s.getCode(ctx, msg.UserID)
 	if err != nil {

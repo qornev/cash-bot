@@ -5,7 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/opentracing/opentracing-go"
-	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 type RateDB struct {
@@ -39,7 +39,7 @@ func (db *RateDB) Add(ctx context.Context, date int64, code string, nominal floa
 }
 
 // Get `code` rate at `date` time
-func (db *RateDB) Get(ctx context.Context, date int64, code string) (*converter.Rate, error) {
+func (db *RateDB) Get(ctx context.Context, date int64, code string) (*domain.Rate, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "get rate from db")
 	defer span.Finish()
 
@@ -54,7 +54,7 @@ func (db *RateDB) Get(ctx context.Context, date int64, code string) (*converter.
 			and $2 - dt <= 24 * 60 * 60 -- difference in 1 day
 		order by dt desc;
 	`
-	var rate converter.Rate
+	var rate domain.Rate
 	err := db.db.QueryRowContext(ctx, query, code, date).Scan(&rate.Code, &rate.Nominal)
 
 	return &rate, err

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/cache"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/rate"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/tg"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/config"
@@ -67,11 +68,14 @@ func main() {
 	expenseDB := storage.NewExpenseDB(db)
 	rateDB := storage.NewRateDB(db)
 
-	// INIT MODELS
-	converter := converter.New(rateClient, rateDB, userDB)
+	// INIT CACHE
+	reportCache := cache.New(config)
 
-	msgModel := messages.New(tgClient, userDB, expenseDB, converter)
-	clbModel := callbacks.New(tgClient, userDB)
+	// INIT MODELS
+	converter := converter.New(rateClient, rateDB, userDB, reportCache)
+
+	msgModel := messages.New(tgClient, userDB, expenseDB, reportCache, converter)
+	clbModel := callbacks.New(tgClient, userDB, reportCache)
 
 	// INIT SERVER
 	srv := server.NewServer(*port)

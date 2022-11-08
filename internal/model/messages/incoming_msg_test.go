@@ -19,7 +19,7 @@ import (
 func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sender := mocks.NewMockMessageSender(ctrl)
-	model := New(sender, nil, nil, nil)
+	model := New(sender, nil, nil, nil, nil)
 
 	sender.EXPECT().SendMessage(gomock.Any(), "Неизвестная команда:(", int64(123))
 
@@ -42,7 +42,7 @@ func Test_OnStartCommand_ShouldAnswerWithIntroMessage(t *testing.T) {
 func Test_OnCurrencyCommand_ShouldAnswerWithKeyboardMessage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sender := mocks.NewMockMessageSender(ctrl)
-	model := New(sender, nil, nil, nil)
+	model := New(sender, nil, nil, nil, nil)
 
 	sender.EXPECT().SendMessageWithKeyboard(gomock.Any(), "Выберите валюту", "currency", int64(1234))
 
@@ -114,8 +114,9 @@ func Test_onAddExpense_ShouldListExpense(t *testing.T) {
 	sender := mocks.NewMockMessageSender(ctrl)
 	userDB := mocks.NewMockUserManipulator(ctrl)
 	expenseDB := mocks.NewMockExpenseManipulator(ctrl)
+	reportCacher := mocks.NewMockReportCacher(ctrl)
 	conver := mocks.NewMockConverter(ctrl)
-	model := New(sender, userDB, expenseDB, conver)
+	model := New(sender, userDB, expenseDB, reportCacher, conver)
 
 	userID := int64(1234)
 	dateString := "2022-09-09"
@@ -125,6 +126,7 @@ func Test_onAddExpense_ShouldListExpense(t *testing.T) {
 
 	userDB.EXPECT().GetCode(gomock.Any(), userID).Return(converter.RUB, nil)
 	conver.EXPECT().Exchange(gomock.Any(), amount, converter.RUB, converter.RUB).Return(amount, nil)
+	reportCacher.EXPECT().RemoveFromAll(gomock.Any(), []int64{userID})
 	expenseDB.EXPECT().Add(gomock.Any(), date.Unix(), userID, category, amount)
 	sender.EXPECT().SendMessage(gomock.Any(), "Расход записан:)", userID)
 
@@ -140,5 +142,123 @@ func Test_onAddExpense_ShouldListExpense(t *testing.T) {
 	)
 
 	assert.Equal(t, AddExpense, info.Command)
+	assert.NoError(t, err)
+}
+
+func Test_GetReport_ShouldCheckIfUserReportExistInCache(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userDB := mocks.NewMockUserManipulator(ctrl)
+	expenseDB := mocks.NewMockExpenseManipulator(ctrl)
+	reportCache := mocks.NewMockReportCacher(ctrl)
+
+	userID := int64(1234)
+	report := "ddd - 369.00 RUB\n"
+
+	reportCache.EXPECT().GetWeekReport(gomock.Any(), userID).Return(report, true)
+	reportCache.EXPECT().GetMonthReport(gomock.Any(), userID).Return(report, true)
+	reportCache.EXPECT().GetYearReport(gomock.Any(), userID).Return(report, true)
+
+	model := New(nil, userDB, expenseDB, reportCache, nil)
+	_, err := model.getReportText(context.Background(), Message{
+		Text:   CommandWeekReport,
+		UserID: userID,
+	})
+	assert.NoError(t, err)
+	_, err = model.getReportText(context.Background(), Message{
+		Text:   CommandMonthReport,
+		UserID: userID,
+	})
+	assert.NoError(t, err)
+	_, err = model.getReportText(context.Background(), Message{
+		Text:   CommandYearReport,
+		UserID: userID,
+	})
+	assert.NoError(t, err)
+}
+
+func Test_GetReport_ShouldSaveUserReportToCache(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userDB := mocks.NewMockUserManipulator(ctrl)
+	expenseDB := mocks.NewMockExpenseManipulator(ctrl)
+	reportCache := mocks.NewMockReportCacher(ctrl)
+
+	userID := int64(1234)
+	report := "ddd - 369.00 RUB\n"
+	now := time.Now().Unix()
+
+	expenseDB.EXPECT().Get(gomock.Any(), userID).Return([]domain.Expense{
+		{
+			Amount:   123,
+			Category: "ddd",
+			Date:     now,
+		},
+		{
+			Amount:   123,
+			Category: "ddd",
+			Date:     now - 100,
+		},
+		{
+			Amount:   123,
+			Category: "ddd",
+			Date:     now - 1000,
+		},
+	}, nil).Times(3)
+	userDB.EXPECT().GetCode(gomock.Any(), userID).Return(converter.RUB, nil).Times(3)
+	reportCache.EXPECT().GetWeekReport(gomock.Any(), userID).Return("", false)
+	reportCache.EXPECT().GetMonthReport(gomock.Any(), userID).Return("", false)
+	reportCache.EXPECT().GetYearReport(gomock.Any(), userID).Return("", false)
+
+	reportCache.EXPECT().SetWeekReport(gomock.Any(), userID, report)
+	reportCache.EXPECT().SetMonthReport(gomock.Any(), userID, report)
+	reportCache.EXPECT().SetYearReport(gomock.Any(), userID, report)
+
+	model := New(nil, userDB, expenseDB, reportCache, nil)
+	_, err := model.getReportText(context.Background(), Message{
+		Text:   CommandWeekReport,
+		UserID: userID,
+	})
+	assert.NoError(t, err)
+	_, err = model.getReportText(context.Background(), Message{
+		Text:   CommandMonthReport,
+		UserID: userID,
+	})
+	assert.NoError(t, err)
+	_, err = model.getReportText(context.Background(), Message{
+		Text:   CommandYearReport,
+		UserID: userID,
+	})
+	assert.NoError(t, err)
+}
+
+func Test_addExpense_ShouldRemoveUserReportFromCache(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userDB := mocks.NewMockUserManipulator(ctrl)
+	expenseDB := mocks.NewMockExpenseManipulator(ctrl)
+	reportCache := mocks.NewMockReportCacher(ctrl)
+	conver := mocks.NewMockConverter(ctrl)
+
+	userID := int64(1234)
+	expense := &domain.Expense{
+		Amount:   123,
+		Category: "ddd",
+		Date:     time.Now().Unix(),
+	}
+
+	userDB.EXPECT().GetCode(gomock.Any(), userID).Return(converter.RUB, nil)
+	conver.EXPECT().Exchange(gomock.Any(), expense.Amount, converter.RUB, converter.RUB).Return(expense.Amount, nil)
+	expenseDB.EXPECT().Add(gomock.Any(), expense.Date, userID, expense.Category, expense.Amount)
+
+	reportCache.EXPECT().RemoveFromAll(gomock.Any(), []int64{userID})
+
+	model := New(nil, userDB, expenseDB, reportCache, conver)
+	err := model.addExpense(
+		context.Background(),
+		expense,
+		Message{
+			UserID: userID,
+			Text:   "ddd",
+		},
+	)
+
 	assert.NoError(t, err)
 }

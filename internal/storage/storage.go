@@ -9,17 +9,17 @@ import (
 
 type ConfigGetter interface {
 	HostDB() string
-	Port() int
-	Username() string
-	Password() string
+	PortDB() int
+	UsernameDB() string
+	PasswordDB() string
 }
 
 func Connect(configGetter ConfigGetter) (*sql.DB, error) {
 	dataSourceName := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable",
 		configGetter.HostDB(),
-		configGetter.Port(),
-		configGetter.Username(),
-		configGetter.Password(),
+		configGetter.PortDB(),
+		configGetter.UsernameDB(),
+		configGetter.PasswordDB(),
 	)
 	db, err := sql.Open("postgres", dataSourceName)
 	return db, err

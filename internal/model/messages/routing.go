@@ -18,12 +18,12 @@ func (s *Model) IncomingMessage(msg Message, info *CommandInfo) error {
 
 	case msg.Text == CommandWeekReport || msg.Text == CommandMonthReport || msg.Text == CommandYearReport:
 		info.Command = commandReportText(msg.Text)
-		text, err := s.getReportText(ctx, msg)
+		err := s.producer.ProduceMessage("reports", msg.UserID, msg.Text)
 		if err != nil {
 			logger.Error("cannot get user report", zap.Int64("user_id", msg.UserID), zap.Error(err))
 			return s.tgClient.SendMessage(ctx, "Ошибка формирования отчета", msg.UserID)
 		}
-		return s.tgClient.SendMessage(ctx, text, msg.UserID)
+		return nil
 
 	case msg.Text == CommandGetCurrency:
 		info.Command = GetCurrency

@@ -47,21 +47,27 @@ type Converter interface {
 	GetHistoricalCodeRate(ctx context.Context, code string, date int64) (float64, error)
 }
 
+type Producer interface {
+	ProduceMessage(topic string, userID int64, text string) error
+}
+
 type Model struct {
 	tgClient    MessageSender
 	userDB      UserManipulator
 	expenseDB   ExpenseManipulator
 	reportCache ReportCacher
 	converter   Converter
+	producer    Producer
 }
 
-func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter) *Model {
+func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter, producer Producer) *Model {
 	return &Model{
 		tgClient:    tgClient,
 		userDB:      userDB,
 		expenseDB:   expenseDB,
 		reportCache: reportCache,
 		converter:   converter,
+		producer:    producer,
 	}
 }
 

@@ -18,6 +18,10 @@ import (
 	"go.uber.org/zap"
 )
 
+type ReportSender interface {
+	SendReport(ctx context.Context, userID int64, report string) error
+}
+
 type ExpenseManipulator interface {
 	Get(ctx context.Context, userID int64) ([]domain.Expense, error)
 }
@@ -41,14 +45,16 @@ type Converter interface {
 }
 
 type Model struct {
+	grpcClient  ReportSender
 	userDB      UserManipulator
 	expenseDB   ExpenseManipulator
 	reportCache ReportCacher
 	converter   Converter
 }
 
-func New(userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter) *Model {
+func New(grpcClient ReportSender, userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter) *Model {
 	return &Model{
+		grpcClient:  grpcClient,
 		userDB:      userDB,
 		expenseDB:   expenseDB,
 		reportCache: reportCache,
@@ -66,20 +72,29 @@ func (s *Model) Cleanup(session sarama.ConsumerGroupSession) error {
 
 func (s *Model) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for message := range claim.Messages() {
-		logger.Info("get message from broker", zap.String("user_id", string(message.Value)), zap.String("text", string(message.Key)), zap.Int32("partition", message.Partition), zap.Int64("offset", message.Offset))
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
-		userID, err := strconv.Atoi(string(message.Value))
+		command := string(message.Key)
+		logger.Info("get message from broker", zap.String("user_id", string(message.Value)), zap.String("command", command), zap.Int32("partition", message.Partition), zap.Int64("offset", message.Offset))
+
+		userID, err := strconv.ParseInt(string(message.Value), 10, 64)
 		if err != nil {
 			logger.Error("cannot convert user id", zap.Error(err), zap.String("user_id", string(message.Value)))
 		}
 
-		report, err := s.getReportText(context.Background(), int64(userID), string(message.Key))
+		report, err := s.getReportText(context.Background(), int64(userID), command)
 		if err != nil {
-			logger.Error("cannot calc user report", zap.Error(err), zap.Int("user_id", userID), zap.String("command", string(message.Key)))
+			logger.Error("cannot calc user report", zap.Error(err), zap.Int64("user_id", userID), zap.String("command", command))
+		}
+		logger.Debug("report calculated", zap.Int64("user_id", userID), zap.String("report", report))
+
+		err = s.grpcClient.SendReport(ctx, userID, report)
+		if err != nil {
+			logger.Error("cannot send user report", zap.Error(err), zap.Int64("user_id", userID), zap.String("command", command))
 		}
 
-		logger.Debug("report calculated", zap.Int("user_id", userID), zap.String("report", report))
 		session.MarkMessage(message, "")
+		cancel()
 	}
 	return nil
 }

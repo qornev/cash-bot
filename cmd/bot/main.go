@@ -87,7 +87,7 @@ func main() {
 
 	// INIT SERVER
 	metricsServer := server.NewMetricsServer(*metricsPort)
-	GRPCServer, err := server.NewGRPCServer(*grpcPort)
+	GRPCServer, err := server.NewGRPCServer(*grpcPort, tgClient)
 	if err != nil {
 		logger.Fatal("grpc server init failed", zap.Error(err))
 	}

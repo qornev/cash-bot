@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package gateway.v1;
+option go_package = "gitlab.ozon.ru/alex1234562557/telegram-bot/internal/gateway/gateway/v1;gateway";
+
+// Router service interact with users by recieving and sending messages.
+service Router {
+  // Send user expenses report
+  rpc SendReport(Report) returns (google.protobuf.Empty);
+}
+
+message Report {
+    int64 user_id = 1;
+    string text = 2;
+}

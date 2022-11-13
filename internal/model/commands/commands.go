@@ -1,6 +1,6 @@
-package messages
+package commands
 
-const greeting = `Бот для учета расходов
+const Greeting = `Бот для учета расходов
 
 Добавить трату: <сумма> <категория> <дата*>
 * - необязательный параметр
@@ -36,7 +36,7 @@ const (
 	CommandShowBudget  = "/show_budget"
 )
 
-func commandReportText(command string) string {
+func CommandReportText(command string) string {
 	switch command {
 	case CommandWeekReport:
 		return WeekReport
@@ -45,6 +45,6 @@ func commandReportText(command string) string {
 	case CommandYearReport:
 		return YearReport
 	default:
-		return ""
+		return Unknown
 	}
 }

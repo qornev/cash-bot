@@ -5,21 +5,25 @@ MOCKGEN=${BINDIR}/mockgen_${GOVER}
 SMARTIMPORTS=${BINDIR}/smartimports_${GOVER}
 LINTVER=v1.49.0
 LINTBIN=${BINDIR}/lint_${GOVER}_${LINTVER}
-PACKAGE=gitlab.ozon.dev/alex1234562557/telegram-bot/cmd/bot
+PACKAGE=gitlab.ozon.dev/alex1234562557/telegram-bot/cmd
 
 all: format build test lint
 
 build: bindir
-	go build -o ${BINDIR}/bot ${PACKAGE}
+	go build -o ${BINDIR}/bot ${PACKAGE}/bot
+	go build -o ${BINDIR}/reports ${PACKAGE}/report-service
 
 test:
 	go test -count=1 ./...
 
+reports:
+	go run ${PACKAGE}/report-service -develop
+
 prod:
-	go run ${PACKAGE}
+	go run ${PACKAGE}/bot
 
 dev:
-	go run ${PACKAGE} -develop
+	go run ${PACKAGE}/bot -develop
 
 generate: install-mockgen
 	${MOCKGEN} -source=internal/model/messages/incoming_msg.go -destination=internal/mocks/model/messages/messages_mocks.go

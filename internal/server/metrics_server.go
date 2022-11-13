@@ -11,12 +11,12 @@ import (
 	"go.uber.org/zap"
 )
 
-type Model struct {
+type MetricsModel struct {
 	server *http.Server
 }
 
-func NewServer(port int) *Model {
-	model := &Model{
+func NewMetricsServer(port int) *MetricsModel {
+	model := &MetricsModel{
 		server: &http.Server{
 			Addr: fmt.Sprintf(":%d", port),
 		},
@@ -26,13 +26,13 @@ func NewServer(port int) *Model {
 	return model
 }
 
-func (m *Model) Start(ctx context.Context, wg *sync.WaitGroup) {
+func (m *MetricsModel) StartMetricsServer(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		logger.Info("starting http server...")
+		logger.Info("starting metrics http server...")
 		if err := m.server.ListenAndServe(); err != http.ErrServerClosed {
-			logger.Fatal("cannot start http server", zap.Error(err))
+			logger.Fatal("cannot start metrics http server", zap.Error(err))
 			return
 		}
 	}()
@@ -42,9 +42,9 @@ func (m *Model) Start(ctx context.Context, wg *sync.WaitGroup) {
 		defer wg.Done()
 		<-ctx.Done()
 		if err := m.server.Shutdown(ctx); err != nil {
-			logger.Error("cannot shutdown http server", zap.Error(err))
+			logger.Error("cannot shutdown metrics http server", zap.Error(err))
 			return
 		}
-		logger.Info("http server shutted down")
+		logger.Info("http metrics server shutted down")
 	}()
 }

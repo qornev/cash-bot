@@ -33,10 +33,11 @@ type CacheConfig struct {
 }
 
 type Service struct {
-	Tg    TelegramConfig `yaml:"telegram"`
-	Rate  RateConfig     `yaml:"rateApi"`
-	DB    DatabaseConfig `yaml:"database"`
-	Cache CacheConfig    `yaml:"cache"`
+	Tg     TelegramConfig `yaml:"telegram"`
+	Rate   RateConfig     `yaml:"rateApi"`
+	DB     DatabaseConfig `yaml:"database"`
+	Cache  CacheConfig    `yaml:"cache"`
+	Broker []string       `yaml:"broker"`
 }
 
 func New() (*Service, error) {
@@ -109,4 +110,10 @@ func (s *Service) UsernameCache() string {
 
 func (s *Service) PasswordCache() string {
 	return s.Cache.Password
+}
+
+// Broker
+
+func (s *Service) ListBroker() []string {
+	return s.Broker
 }

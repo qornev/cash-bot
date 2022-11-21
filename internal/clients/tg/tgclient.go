@@ -11,6 +11,7 @@ import (
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/middlewares"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/commands"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/messages"
 	"go.uber.org/zap"
 )
@@ -98,7 +99,7 @@ func (c *Client) ListenUpdates(msgModel *messages.Model, clbModel *callbacks.Mod
 					UserID: update.Message.From.ID,
 				},
 				&messages.CommandInfo{
-					Command: messages.Unknown,
+					Command: commands.Unknown,
 				},
 			)
 			if err != nil {
@@ -138,6 +139,7 @@ func (c *Client) AutoListenUpdates(ctx context.Context, wg *sync.WaitGroup, msgM
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		logger.Info("starting listening updates from telegram...")
 		c.ListenUpdates(msgModel, clbModel)
 	}()
 
@@ -146,5 +148,6 @@ func (c *Client) AutoListenUpdates(ctx context.Context, wg *sync.WaitGroup, msgM
 		defer wg.Done()
 		<-ctx.Done()
 		c.client.StopReceivingUpdates()
+		logger.Info("stop listening updates from telegram")
 	}()
 }

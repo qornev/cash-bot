@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	domain "gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
 )
 
 // MockMessageSender is a mock of MessageSender interface.
@@ -98,21 +97,6 @@ func (m *MockExpenseManipulator) Add(ctx context.Context, date, userID int64, ca
 func (mr *MockExpenseManipulatorMockRecorder) Add(ctx, date, userID, category, amount interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockExpenseManipulator)(nil).Add), ctx, date, userID, category, amount)
-}
-
-// Get mocks base method.
-func (m *MockExpenseManipulator) Get(ctx context.Context, userID int64) ([]domain.Expense, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, userID)
-	ret0, _ := ret[0].([]domain.Expense)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockExpenseManipulatorMockRecorder) Get(ctx, userID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockExpenseManipulator)(nil).Get), ctx, userID)
 }
 
 // MockUserManipulator is a mock of UserManipulator interface.
@@ -207,51 +191,6 @@ func (m *MockReportCacher) EXPECT() *MockReportCacherMockRecorder {
 	return m.recorder
 }
 
-// GetMonthReport mocks base method.
-func (m *MockReportCacher) GetMonthReport(ctx context.Context, key int64) (string, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMonthReport", ctx, key)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// GetMonthReport indicates an expected call of GetMonthReport.
-func (mr *MockReportCacherMockRecorder) GetMonthReport(ctx, key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMonthReport", reflect.TypeOf((*MockReportCacher)(nil).GetMonthReport), ctx, key)
-}
-
-// GetWeekReport mocks base method.
-func (m *MockReportCacher) GetWeekReport(ctx context.Context, key int64) (string, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetWeekReport", ctx, key)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// GetWeekReport indicates an expected call of GetWeekReport.
-func (mr *MockReportCacherMockRecorder) GetWeekReport(ctx, key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWeekReport", reflect.TypeOf((*MockReportCacher)(nil).GetWeekReport), ctx, key)
-}
-
-// GetYearReport mocks base method.
-func (m *MockReportCacher) GetYearReport(ctx context.Context, key int64) (string, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetYearReport", ctx, key)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// GetYearReport indicates an expected call of GetYearReport.
-func (mr *MockReportCacherMockRecorder) GetYearReport(ctx, key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetYearReport", reflect.TypeOf((*MockReportCacher)(nil).GetYearReport), ctx, key)
-}
-
 // RemoveFromAll mocks base method.
 func (m *MockReportCacher) RemoveFromAll(ctx context.Context, key []int64) error {
 	m.ctrl.T.Helper()
@@ -264,48 +203,6 @@ func (m *MockReportCacher) RemoveFromAll(ctx context.Context, key []int64) error
 func (mr *MockReportCacherMockRecorder) RemoveFromAll(ctx, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveFromAll", reflect.TypeOf((*MockReportCacher)(nil).RemoveFromAll), ctx, key)
-}
-
-// SetMonthReport mocks base method.
-func (m *MockReportCacher) SetMonthReport(ctx context.Context, key int64, value string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetMonthReport", ctx, key, value)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetMonthReport indicates an expected call of SetMonthReport.
-func (mr *MockReportCacherMockRecorder) SetMonthReport(ctx, key, value interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMonthReport", reflect.TypeOf((*MockReportCacher)(nil).SetMonthReport), ctx, key, value)
-}
-
-// SetWeekReport mocks base method.
-func (m *MockReportCacher) SetWeekReport(ctx context.Context, key int64, value string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetWeekReport", ctx, key, value)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetWeekReport indicates an expected call of SetWeekReport.
-func (mr *MockReportCacherMockRecorder) SetWeekReport(ctx, key, value interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWeekReport", reflect.TypeOf((*MockReportCacher)(nil).SetWeekReport), ctx, key, value)
-}
-
-// SetYearReport mocks base method.
-func (m *MockReportCacher) SetYearReport(ctx context.Context, key int64, value string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetYearReport", ctx, key, value)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetYearReport indicates an expected call of SetYearReport.
-func (mr *MockReportCacherMockRecorder) SetYearReport(ctx, key, value interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetYearReport", reflect.TypeOf((*MockReportCacher)(nil).SetYearReport), ctx, key, value)
 }
 
 // MockConverter is a mock of Converter interface.
@@ -346,31 +243,39 @@ func (mr *MockConverterMockRecorder) Exchange(ctx, value, from, to interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockConverter)(nil).Exchange), ctx, value, from, to)
 }
 
-// GetHistoricalCodeRate mocks base method.
-func (m *MockConverter) GetHistoricalCodeRate(ctx context.Context, code string, date int64) (float64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHistoricalCodeRate", ctx, code, date)
-	ret0, _ := ret[0].(float64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+// MockProducer is a mock of Producer interface.
+type MockProducer struct {
+	ctrl     *gomock.Controller
+	recorder *MockProducerMockRecorder
 }
 
-// GetHistoricalCodeRate indicates an expected call of GetHistoricalCodeRate.
-func (mr *MockConverterMockRecorder) GetHistoricalCodeRate(ctx, code, date interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalCodeRate", reflect.TypeOf((*MockConverter)(nil).GetHistoricalCodeRate), ctx, code, date)
+// MockProducerMockRecorder is the mock recorder for MockProducer.
+type MockProducerMockRecorder struct {
+	mock *MockProducer
 }
 
-// UpdateHistoricalRates mocks base method.
-func (m *MockConverter) UpdateHistoricalRates(ctx context.Context, date *int64) error {
+// NewMockProducer creates a new mock instance.
+func NewMockProducer(ctrl *gomock.Controller) *MockProducer {
+	mock := &MockProducer{ctrl: ctrl}
+	mock.recorder = &MockProducerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockProducer) EXPECT() *MockProducerMockRecorder {
+	return m.recorder
+}
+
+// ProduceMessage mocks base method.
+func (m *MockProducer) ProduceMessage(topic string, userID int64, text string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateHistoricalRates", ctx, date)
+	ret := m.ctrl.Call(m, "ProduceMessage", topic, userID, text)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateHistoricalRates indicates an expected call of UpdateHistoricalRates.
-func (mr *MockConverterMockRecorder) UpdateHistoricalRates(ctx, date interface{}) *gomock.Call {
+// ProduceMessage indicates an expected call of ProduceMessage.
+func (mr *MockProducerMockRecorder) ProduceMessage(topic, userID, text interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateHistoricalRates", reflect.TypeOf((*MockConverter)(nil).UpdateHistoricalRates), ctx, date)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProduceMessage", reflect.TypeOf((*MockProducer)(nil).ProduceMessage), topic, userID, text)
 }

@@ -2,17 +2,16 @@ package messages
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/domain"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/commands"
 )
 
 type MessageSender interface {
@@ -22,7 +21,6 @@ type MessageSender interface {
 
 type ExpenseManipulator interface {
 	Add(ctx context.Context, date int64, userID int64, category string, amount float64) error
-	Get(ctx context.Context, userID int64) ([]domain.Expense, error)
 }
 
 type UserManipulator interface {
@@ -32,19 +30,15 @@ type UserManipulator interface {
 }
 
 type ReportCacher interface {
-	GetWeekReport(ctx context.Context, key int64) (string, bool)
-	SetWeekReport(ctx context.Context, key int64, value string) error
-	GetMonthReport(ctx context.Context, key int64) (string, bool)
-	SetMonthReport(ctx context.Context, key int64, value string) error
-	GetYearReport(ctx context.Context, key int64) (string, bool)
-	SetYearReport(ctx context.Context, key int64, value string) error
 	RemoveFromAll(ctx context.Context, key []int64) error
 }
 
 type Converter interface {
 	Exchange(ctx context.Context, value float64, from string, to string) (float64, error)
-	UpdateHistoricalRates(ctx context.Context, date *int64) error
-	GetHistoricalCodeRate(ctx context.Context, code string, date int64) (float64, error)
+}
+
+type Producer interface {
+	ProduceMessage(topic string, userID int64, text string) error
 }
 
 type Model struct {
@@ -53,15 +47,17 @@ type Model struct {
 	expenseDB   ExpenseManipulator
 	reportCache ReportCacher
 	converter   Converter
+	producer    Producer
 }
 
-func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter) *Model {
+func New(tgClient MessageSender, userDB UserManipulator, expenseDB ExpenseManipulator, reportCache ReportCacher, converter Converter, producer Producer) *Model {
 	return &Model{
 		tgClient:    tgClient,
 		userDB:      userDB,
 		expenseDB:   expenseDB,
 		reportCache: reportCache,
 		converter:   converter,
+		producer:    producer,
 	}
 }
 
@@ -92,111 +88,10 @@ func (c *CommandInfo) WithContext(ctx context.Context) *CommandInfo {
 	return c2
 }
 
-// Send prepared report with expenses to user
-func (s *Model) getReportText(ctx context.Context, msg Message) (string, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "get report text")
-	span.SetTag("command", commandReportText(msg.Text))
-	defer span.Finish()
-
-	currentTime := time.Now()
-	var startTime time.Time
-	var report string
-	var ok bool
-	switch msg.Text {
-	case CommandWeekReport:
-		startTime = currentTime.AddDate(0, 0, -int(currentTime.Weekday())) // Start from Monday
-		report, ok = s.reportCache.GetWeekReport(ctx, msg.UserID)
-	case CommandMonthReport:
-		startTime = currentTime.AddDate(0, 0, 1-currentTime.Day()) // Start from first day in month
-		report, ok = s.reportCache.GetMonthReport(ctx, msg.UserID)
-	case CommandYearReport:
-		startTime = currentTime.AddDate(0, 1-int(currentTime.Month()), 1-currentTime.Day()) // Start with first dat in year
-		report, ok = s.reportCache.GetYearReport(ctx, msg.UserID)
-	}
-	startTime = time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, startTime.Location())
-
-	if ok {
-		return "Отчет:\n" + report, nil
-	}
-
-	report, err := s.calcReport(ctx, startTime, msg)
-	if err != nil {
-		return "", errors.Wrap(err, "can't get report")
-	}
-
-	if len(report) == 0 {
-		return "Для начала добавьте покупки", nil
-	}
-
-	switch msg.Text {
-	case CommandWeekReport:
-		err = s.reportCache.SetWeekReport(ctx, msg.UserID, report)
-	case CommandMonthReport:
-		err = s.reportCache.SetMonthReport(ctx, msg.UserID, report)
-	case CommandYearReport:
-		err = s.reportCache.SetYearReport(ctx, msg.UserID, report)
-	}
-	if err != nil {
-		return "", err
-	}
-	return "Отчет:\n" + report, nil
-}
-
-// Get calculated user sum of expenses from `startTime`
-func (s *Model) calcReport(ctx context.Context, startTime time.Time, msg Message) (string, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "calc report")
-	span.Finish()
-
-	list, err := s.getExpenses(ctx, msg.UserID)
-	if err != nil {
-		return "", errors.Wrap(err, "can't get expenses")
-	}
-
-	code, err := s.getCode(ctx, msg.UserID)
-	if err != nil {
-		return "", errors.Wrap(err, "can't get current code")
-	}
-
-	sum := make(map[string]float64)
-	for _, elem := range list {
-		if elem.Date > startTime.Unix() {
-			if code != converter.RUB {
-				rate, err := s.converter.GetHistoricalCodeRate(ctx, code, elem.Date)
-				switch {
-				case err == sql.ErrNoRows:
-					if err = s.converter.UpdateHistoricalRates(ctx, &elem.Date); err != nil {
-						return "", err
-					}
-
-					rate, err = s.converter.GetHistoricalCodeRate(ctx, code, elem.Date)
-					if err != nil {
-						return "", err
-					}
-				case err != nil:
-					return "", err
-				}
-
-				elem.Amount = elem.Amount / rate
-			}
-			sum[elem.Category] += elem.Amount
-		}
-	}
-
-	var report strings.Builder
-	for key, value := range sum {
-		if err != nil {
-			return "", errors.Wrap(err, "can't convert value")
-		}
-		fmt.Fprintf(&report, "%s - %.2f %s\n", key, value, code)
-	}
-
-	return report.String(), nil
-}
-
 // Add expense to database with converting
 func (s *Model) addExpense(ctx context.Context, expense *domain.Expense, msg Message) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "add expense")
-	span.SetTag("command", AddExpense)
+	span.SetTag("command", commands.AddExpense)
 	defer span.Finish()
 
 	if err := s.reportCache.RemoveFromAll(ctx, []int64{msg.UserID}); err != nil {
@@ -219,18 +114,6 @@ func (s *Model) addExpense(ctx context.Context, expense *domain.Expense, msg Mes
 	return s.expenseDB.Add(ctx, expense.Date, msg.UserID, expense.Category, expense.Amount)
 }
 
-// Get list of all user expenses
-func (s *Model) getExpenses(ctx context.Context, userID int64) ([]domain.Expense, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "get expenses")
-	defer span.Finish()
-
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	list, err := s.expenseDB.Get(ctx, userID)
-	return list, err
-}
-
 // Get user currency code
 func (s *Model) getCode(ctx context.Context, userID int64) (string, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "get code")
@@ -246,7 +129,7 @@ func (s *Model) getCode(ctx context.Context, userID int64) (string, error) {
 // Get user month limit (budget)
 func (s *Model) getBudgetText(ctx context.Context, userID int64) (string, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "get budget text")
-	span.SetTag("command", ShowBudget)
+	span.SetTag("command", commands.ShowBudget)
 	defer span.Finish()
 
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -274,7 +157,7 @@ var budgetRe = regexp.MustCompile(`\/set_budget ([0-9.]+[0-9]+$)`)
 // Set user budget. Will save it to database
 func (s *Model) setBudget(ctx context.Context, msg Message) (err error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "set budget")
-	span.SetTag("command", SetBudget)
+	span.SetTag("command", commands.SetBudget)
 	defer span.Finish()
 
 	matches := budgetRe.FindStringSubmatch(msg.Text)

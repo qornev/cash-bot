@@ -13,6 +13,7 @@ import (
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/clients/tg"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/config"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/converter"
+	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/kafka/producer"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/logger"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/middlewares"
 	"gitlab.ozon.dev/alex1234562557/telegram-bot/internal/model/callbacks"
@@ -23,9 +24,10 @@ import (
 )
 
 var (
-	port        = flag.Int("port", 8080, "the port to listen")
+	metricsPort = flag.Int("mport", 8080, "port to listen metrics")
+	grpcPort    = flag.Int("gport", 8081, "port to listen grpc requests")
 	developMode = flag.Bool("develop", false, "development mode")
-	serviceName = flag.String("service", "tgbot", "the name of starting service")
+	serviceName = flag.String("service", "tgbot", "name of starting service")
 )
 
 func main() {
@@ -71,20 +73,31 @@ func main() {
 	// INIT CACHE
 	reportCache := cache.New(config)
 
+	// INIT PRODUCER
+	producer, err := producer.NewProducer(config.ListBroker())
+	if err != nil {
+		logger.Fatal("message producer init failed", zap.Error(err))
+	}
+
 	// INIT MODELS
 	converter := converter.New(rateClient, rateDB, userDB, reportCache)
 
-	msgModel := messages.New(tgClient, userDB, expenseDB, reportCache, converter)
+	msgModel := messages.New(tgClient, userDB, expenseDB, reportCache, converter, producer)
 	clbModel := callbacks.New(tgClient, userDB, reportCache)
 
 	// INIT SERVER
-	srv := server.NewServer(*port)
+	metricsServer := server.NewMetricsServer(*metricsPort)
+	GRPCServer, err := server.NewGRPCServer(*grpcPort, tgClient)
+	if err != nil {
+		logger.Fatal("grpc server init failed", zap.Error(err))
+	}
 
 	// START WORKERS
 	wg := sync.WaitGroup{}
 	converter.AutoUpdateRate(ctx, &wg)
 	tgClient.AutoListenUpdates(ctx, &wg, msgModel, clbModel)
-	srv.Start(ctx, &wg)
+	metricsServer.StartMetricsServer(ctx, &wg)
+	GRPCServer.StartGRPCServer(ctx, &wg)
 
 	<-ctx.Done()
 	wg.Wait()
